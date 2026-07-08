@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>عطور الفخامة | المتجر الرسمي</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- الهيدر العلوي -->
+    <header class="navbar">
+        <div class="logo">👑 عطور الفخامة</div>
+        <button class="cart-toggle-btn" onclick="toggleCart()">
+            🛒 سلة التسوق <span id="cart-count">0</span>
+        </button>
+    </header>
+
+    <!-- واجهة ترحيبية للموقع (Hero Section) -->
+    <section class="hero">
+        <h1>اكتشف الفخامة في كل رشة</h1>
+        <p>مجموعتنا الحصرية من العطور الملكية الفاخرة المستوحاة من العود والمسك الفاخر.</p>
+    </section>
+
+    <!-- شبكة المنتجات الاحترافية -->
+    <main class="container">
+        <h2 class="section-title">العطور الأكثر مبيعاً</h2>
+        <div class="products-grid" id="products-container">
+            <!-- المنتجات سيتم توليدها تلقائياً عبر الجافا سكريبت -->
+        </div>
+    </main>
+
+    <!-- شريط السلة الجانبي المنزلق (Sidebar) -->
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h3>سلة المشتريات</h3>
+            <button class="close-cart" onclick="toggleCart()">&times;</button>
+        </div>
+        <div class="cart-body">
+            <ul class="cart-items-list" id="cart-items">
+                <!-- العناصر تظهر هنا -->
+            </ul>
+        </div>
+        <div class="cart-footer">
+            <div class="total-price">الإجمالي: <span id="cart-total">0</span> د.ج</div>
+            <button class="checkout-btn" onclick="sendOrderToWhatsapp()">تأكيد الطلب عبر الواتساب 💬</button>
+            <div class="store-info">
+                <p>📧 qdwryyhyy644@gmail.com</p>
+                <p>📞 0656708603</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- زر الواتساب العائم الذكي -->
+    <a href="https://wa.me/213656708603?text=مرحباً%20عطور%20الفخامة،%20أود%20الاستفسار%20عن%20عطوركم" class="whatsapp-float" target="_blank">
+        <svg viewBox="0 0 32 32" class="whatsapp-icon"><path d="M16 0c-8.837 0-16 7.163-16 16 0 2.825.737 5.607 2.137 8.048l-2.137 7.952 8.127-2.133c2.378 1.258 5.046 1.933 7.873 1.933 8.837 0 16-7.163 16-16s-7.163-16-16-16zm8.29 21.642c-.342.962-1.723 1.768-2.385 1.88-.585.097-1.348.172-2.185-.102-.515-.168-1.173-.393-1.932-.733-3.238-1.442-5.328-4.708-5.49-4.922-.162-.213-1.31-1.748-1.31-3.333 0-1.585.828-2.363 1.123-2.677.295-.312.648-.392.865-.392.217 0 .433.002.62.01.198.008.465-.075.727.552.268.643.918 2.242.998 2.405.08.163.133.353.025.568-.108.215-.163.35-.325.538-.162.188-.342.378-.488.508-.163.143-.333.3-.143.627.19.325.845 1.392 1.812 2.253.1.088.192.132.288.177 1.243.992 2.193 1.312 2.508 1.472.315.162.503.133.693-.082.19-.215.812-.945 1.03-1.27.218-.327.435-.272.735-.162.3.11 1.9.897 2.227 1.06.327.162.543.243.623.382.08.138.08.802-.262 1.763z" fill="#FFF"/></svg>
+    </a>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
