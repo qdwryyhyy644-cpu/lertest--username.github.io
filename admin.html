@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة تحكم - عطور الفخامة</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+  <div id="login-container" class="admin-card">
+    <h2>تسجيل الدخول للوحة التحكم</h2>
+    <input type="email" id="admin-email" placeholder="البريد الإلكتروني">
+    <input type="password" id="admin-pass" placeholder="كلمة المرور">
+    <button onclick="login()">دخول</button>
+  </div>
+
+  <div id="dashboard" style="display:none;">
+    <h1>لوحة إدارة متجر عطور الفخامة</h1>
+    
+    <!-- قسم إضافة منتج -->
+    <section class="admin-section">
+      <h3>إضافة عطر جديد (حتى 3 صور)</h3>
+      <input type="text" id="p-name" placeholder="اسم العطر">
+      <input type="number" id="p-price" placeholder="السعر (د.ج)">
+      <input type="file" id="p-images" accept="image/*" multiple onchange="checkMaxFiles(this)">
+      <button onclick="addProduct()">إضافة المنتج</button>
+    </section>
+
+    <!-- قسم الإعدادات -->
+    <section class="admin-section">
+      <h3>إعدادات المتجر</h3>
+      <input type="text" id="app-whatsapp" placeholder="رقم الواتساب الجديد">
+      <button onclick="updateWhatsapp()">تحديث رقم الواتساب</button>
+      <hr>
+      <input type="password" id="new-password" placeholder="كلمة المرور الجديدة">
+      <button onclick="changePassword()">تغيير كلمة المرور</button>
+    </section>
+
+    <!-- قسم استقبال الطلبات -->
+    <section class="admin-section">
+      <h3>الطلبات الواردة</h3>
+      <div id="orders-list"></div>
+    </section>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
