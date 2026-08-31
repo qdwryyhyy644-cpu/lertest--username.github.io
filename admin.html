@@ -1,53 +1,189 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>لوحة تحكم - عطور الفخامة</title>
-  <link rel="stylesheet" href="style.css">
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم المتجر - عطور الفخامة</title>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, sans-serif; }
+        body { background: #0f172a; color: #fff; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: #1e293b; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #334155; }
+        input, textarea, button { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; }
+        button { background: #0284c7; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background: #0369a1; }
+        .btn-danger { background: #e11d48; }
+        .btn-danger:hover { background: #be123c; }
+        .hidden { display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #334155; padding: 10px; text-align: right; }
+        th { background: #0f172a; }
+    </style>
 </head>
 <body>
-  <div id="login-container" class="admin-card">
-    <h2>تسجيل الدخول للوحة التحكم</h2>
-    <input type="email" id="admin-email" placeholder="البريد الإلكتروني">
-    <input type="password" id="admin-pass" placeholder="كلمة المرور">
-    <button onclick="login()">دخول</button>
-  </div>
 
-  <div id="dashboard" style="display:none;">
-    <h1>لوحة إدارة متجر عطور الفخامة</h1>
-    
-    <!-- قسم إضافة منتج -->
-    <section class="admin-section">
-      <h3>إضافة عطر جديد (حتى 3 صور)</h3>
-      <input type="text" id="p-name" placeholder="اسم العطر">
-      <input type="number" id="p-price" placeholder="السعر (د.ج)">
-      <input type="file" id="p-images" accept="image/*" multiple onchange="checkMaxFiles(this)">
-      <button onclick="addProduct()">إضافة المنتج</button>
-    </section>
+<div class="container">
 
-    <!-- قسم الإعدادات -->
-    <section class="admin-section">
-      <h3>إعدادات المتجر</h3>
-      <input type="text" id="app-whatsapp" placeholder="رقم الواتساب الجديد">
-      <button onclick="updateWhatsapp()">تحديث رقم الواتساب</button>
-      <hr>
-      <input type="password" id="new-password" placeholder="كلمة المرور الجديدة">
-      <button onclick="changePassword()">تغيير كلمة المرور</button>
-    </section>
+    <!-- 1. شاشة تسجيل الدخول -->
+    <div id="login-screen" class="card" style="max-width:400px; margin: 50px auto; text-align: center;">
+        <h2>🔐 تسجيل الدخول للوحة التحكم</h2>
+        <input type="password" id="admin-pass" placeholder="أدخل كلمة السر">
+        <button onclick="checkPassword()">دخول</button>
+        <p id="login-error" style="color:#f43f5e;" class="hidden">كلمة السر غير صحيحة!</p>
+    </div>
 
-    <!-- قسم استقبال الطلبات -->
-    <section class="admin-section">
-      <h3>الطلبات الواردة</h3>
-      <div id="orders-list"></div>
-    </section>
-  </div>
+    <!-- 2. محتوى لوحة التحكم (مخفي افتراضياً) -->
+    <div id="dashboard-screen" class="hidden">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>👑 لوحة إدارة المتجر</h1>
+            <button onclick="logout()" style="width: auto; padding: 8px 15px;" class="btn-danger">خروج</button>
+        </div>
 
-  <script src="admin.js"></script>
+        <!-- إعدادات رقم الواتساب -->
+        <div class="card">
+            <h3>📱 رقم الواتساب الخاص بالاستلام</h3>
+            <input type="text" id="whatsapp-num" placeholder="مثال: 213656708603">
+            <button onclick="saveWhatsapp()">حفظ الرقم</button>
+        </div>
+
+        <!-- إضافة منتج جديد -->
+        <div class="card">
+            <h3>➕ إضافة عطر جديد للمتجر</h3>
+            <input type="text" id="p-name" placeholder="اسم العطر">
+            <input type="number" id="p-price" placeholder="السعر (د.ج)">
+            <input type="text" id="p-img" placeholder="رابط صورة العطر (URL)">
+            <textarea id="p-desc" placeholder="وصف العطر"></textarea>
+            <button onclick="addProduct()">نشر المنتج في المتجر</button>
+        </div>
+
+        <!-- إدارة المنتجات الحالية -->
+        <div class="card">
+            <h3>📦 المنتجات الحالية</h3>
+            <div id="products-list">تحميل المنتجات...</div>
+        </div>
+
+        <!-- قائمة الطلبات القادمة من الزبائن -->
+        <div class="card">
+            <h3>🛍️ الطلبات المسجلة</h3>
+            <div id="orders-list">تحميل الطلبات...</div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+// ⚠️ ضع مفاتيح Firebase الخاصة بك هنا (نفس المفاتيح الموجودة في script.js)
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// 🔑 كلمة السر الخاصة بك للدخول للوحة (غيرها لما تريد)
+const ADMIN_PASSWORD = "admin";
+
+function checkPassword() {
+    const pass = document.getElementById('admin-pass').value;
+    if (pass === ADMIN_PASSWORD) {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('dashboard-screen').classList.remove('hidden');
+        loadDashboardData();
+    } else {
+        document.getElementById('login-error').classList.remove('hidden');
+    }
+}
+
+function logout() {
+    location.reload();
+}
+
+async function loadDashboardData() {
+    // جلب رقم الواتساب
+    const configDoc = await db.collection("settings").doc("config").get();
+    if (configDoc.exists && configDoc.data().whatsapp) {
+        document.getElementById('whatsapp-num').value = configDoc.data().whatsapp;
+    }
+
+    // جلب المنتجات
+    db.collection("products").onSnapshot(snapshot => {
+        let html = '<table><tr><th>الصورة</th><th>الاسم</th><th>السعر</th><th>إجراء</th></tr>';
+        snapshot.forEach(doc => {
+            const p = doc.data();
+            const img = (p.images && p.images.length > 0) ? p.images[0] : '';
+            html += `<tr>
+                <td><img src="${img}" width="50" height="50" style="object-fit:cover; border-radius:4px;"></td>
+                <td>${p.name}</td>
+                <td>${p.price} د.ج</td>
+                <td><button class="btn-danger" onclick="deleteProduct('${doc.id}')">حذف</button></td>
+            </tr>`;
+        });
+        html += '</table>';
+        document.getElementById('products-list').innerHTML = html;
+    });
+
+    // جلب الطلبات
+    db.collection("orders").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+        let html = '<table><tr><th>الزبون</th><th>الهاتف</th><th>المجموع</th><th>التاريخ</th></tr>';
+        snapshot.forEach(doc => {
+            const o = doc.data();
+            const date = o.createdAt ? new Date(o.createdAt.toDate()).toLocaleString('ar-DZ') : 'الآن';
+            html += `<tr>
+                <td>${o.customerName}</td>
+                <td>${o.phone}</td>
+                <td>${o.total} د.ج</td>
+                <td><small>${date}</small></td>
+            </tr>`;
+        });
+        html += '</table>';
+        document.getElementById('orders-list').innerHTML = html;
+    });
+}
+
+async function saveWhatsapp() {
+    const num = document.getElementById('whatsapp-num').value;
+    await db.collection("settings").doc("config").set({ whatsapp: num }, { merge: true });
+    alert("تم تحديث رقم الواتساب بنجاح!");
+}
+
+async function addProduct() {
+    const name = document.getElementById('p-name').value;
+    const price = Number(document.getElementById('p-price').value);
+    const img = document.getElementById('p-img').value;
+    const desc = document.getElementById('p-desc').value;
+
+    if (!name || !price) { alert("يرجى ملء الاسم والسعر!"); return; }
+
+    await db.collection("products").add({
+        name: name,
+        price: price,
+        images: [img],
+        desc: desc,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    document.getElementById('p-name').value = '';
+    document.getElementById('p-price').value = '';
+    document.getElementById('p-img').value = '';
+    document.getElementById('p-desc').value = '';
+    alert("تمت إضافة المنتج للمتجر!");
+}
+
+async function deleteProduct(id) {
+    if (confirm("هل أنت تأكد من حذف هذا المنتج؟")) {
+        await db.collection("products").doc(id).delete();
+    }
+}
+</script>
 </body>
 </html>
