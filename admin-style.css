@@ -1,0 +1,177 @@
+/* ==========================================
+   تنسيقات لوحة تحكم - عطور الفخامة 👑
+   ========================================== */
+
+:root {
+  --gold-primary: #d4af37;
+  --gold-hover: #aa8c2c;
+  --dark-bg: #1a1a1a;
+  --card-bg: #ffffff;
+  --text-main: #2b2b2b;
+  --text-muted: #666666;
+  --border-color: #e5e5e5;
+  --success-color: #25d366;
+  --shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
+  color: var(--text-main);
+  margin: 0;
+  padding: 20px;
+  direction: rtl;
+}
+
+/* حاوية تسجيل الدخول */
+#login-container {
+  max-width: 400px;
+  margin: 80px auto;
+  background: var(--card-bg);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border-top: 5px solid var(--gold-primary);
+  text-align: center;
+}
+
+#login-container h2 {
+  margin-bottom: 25px;
+  color: var(--dark-bg);
+  font-size: 1.5rem;
+}
+
+/* الهيكل العام للوحة التحكم */
+#dashboard {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+#dashboard h1 {
+  text-align: center;
+  color: var(--dark-bg);
+  margin-bottom: 30px;
+  font-size: 1.8rem;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+#dashboard h1::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 50%;
+  transform: translateX(50%);
+  width: 80px;
+  height: 3px;
+  background-color: var(--gold-primary);
+}
+
+/* الأقسام (Cards) */
+.admin-section {
+  background: var(--card-bg);
+  padding: 25px;
+  margin-bottom: 25px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+}
+
+.admin-section h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: var(--dark-bg);
+  font-size: 1.2rem;
+  border-right: 4px solid var(--gold-primary);
+  padding-right: 10px;
+}
+
+/* الحقول والمدخلات */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="file"] {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-sizing: border-box;
+  font-size: 0.95rem;
+  transition: border-color 0.3s ease;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--gold-primary);
+}
+
+/* الأزرار */
+button {
+  background-color: var(--gold-primary);
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  font-size: 1rem;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+button:hover {
+  background-color: var(--gold-hover);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+hr {
+  border: none;
+  border-top: 1px dashed var(--border-color);
+  margin: 20px 0;
+}
+
+/* بطاقات الطلبات الواردة */
+.order-card {
+  background-color: #fafafa;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 12px;
+  border-right: 4px solid var(--gold-primary) !important;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.order-card p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.order-card button {
+  width: auto;
+  padding: 5px 12px;
+  font-size: 0.85rem;
+  margin-right: 10px;
+  background-color: var(--dark-bg);
+  display: inline-block;
+}
+
+.order-card button:hover {
+  background-color: #333;
+}
+
+/* تجاوب الشاشات */
+@media (max-width: 600px) {
+  body {
+    padding: 10px;
+  }
+  
+  .admin-section {
+    padding: 15px;
+  }
+}
