@@ -1,5 +1,5 @@
 // ==========================================
-// تهيئة Firebase للمتجر الرئيسي
+// 1. تهيئة Firebase والإعدادات الأساسية
 // ==========================================
 // ⚠️ استبدل هذه القيم ببيانات مشروعك الخاصة من Firebase Console
 const firebaseConfig = {
@@ -17,10 +17,10 @@ if (!firebase.apps.length) {
 }
 const db = firebase.firestore();
 
-// رقم الواتساب الافتراضي في حال عدم وجود رقم في اللوحة
+// رقم الواتساب الافتراضي
 let currentWhatsappNumber = "213656708603";
 
-// قائمة المنتجات الافتراضية (تُستخدم كاحتياطي)
+// قائمة المنتجات الافتراضية (Fallback)
 let products = [
     { id: "1", name: "عطر الملكي الفاخر", price: 4500, desc: "مزيج ساحر من العود الملكي المعتّق والمسك الأبيض الأصيل.", img: "https://images.unsplash.com/photo-1594035910387-fea47794261f?w=400" },
     { id: "2", name: "سحر الشرق النادر", price: 5200, desc: "عطر شرقي دافئ يجمع بين أخشاب الصندل ونفحات التوابل النادرة.", img: "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=400" },
@@ -29,23 +29,26 @@ let products = [
     { id: "5", name: "ليالي دمشق السرية", price: 3900, desc: "مزيج غامض ومثير من الورد الجوري والعنبر الأسود الفاخر.", img: "https://images.unsplash.com/photo-1541643600914-78b084683601?w=400" }
 ];
 
-let cart = [];
+// استرجاع السلة من LocalStorage إن وجدت
+let cart = JSON.parse(localStorage.getItem('luxury_perfumes_cart')) || [];
 
 // ==========================================
-// جلب البيانات من Firebase عند التحميل
+// 2. جلب البيانات من Firebase عند التحميل
 // ==========================================
 async function initStore() {
-    // 1. جلب رقم الواتساب المحدث من لوحة التحكم
+    showLoader(true);
+
+    // 1. جلب رقم الواتساب
     try {
         const configDoc = await db.collection("settings").doc("config").get();
         if (configDoc.exists && configDoc.data().whatsapp) {
-            currentWhatsappNumber = configDoc.data().whatsapp;
+            currentWhatsappNumber = configDoc.data().whatsapp.replace(/[^0-9]/g, ''); // تنظيف الرقم
         }
     } catch (e) {
-        console.log("استخدام رقم الواتساب الافتراضي:", e);
+        console.warn("استخدام رقم الواتساب الافتراضي:", e);
     }
 
-    // 2. جلب المنتجات المضافة من لوحة التحكم
+    // 2. جلب المنتجات من Firestore
     try {
         const snapshot = await db.collection("products").get();
         if (!snapshot.empty) {
@@ -54,83 +57,150 @@ async function initStore() {
                 const data = doc.data();
                 firebaseProducts.push({
                     id: doc.id,
-                    name: data.name,
-                    price: Number(data.price),
+                    name: data.name || "عطر فاخر",
+                    price: Number(data.price) || 0,
                     desc: data.desc || "عطر فاخر من مجموعتنا الملكية.",
-                    // استخدام أول صورة تم رفعها من لوحة التحكم
                     img: (data.images && data.images.length > 0) ? data.images[0] : "https://images.unsplash.com/photo-1594035910387-fea47794261f?w=400"
                 });
             });
-            products = firebaseProducts; // استبدال المنتجات بالمنتجات الحقيقية من اللوحة
+            products = firebaseProducts;
         }
     } catch (e) {
-        console.log("تعذر جلب المنتجات من Firebase، استخدام المنتجات الافتراضية:", e);
+        console.warn("تعذر جلب المنتجات من Firebase، تم استخدام القائمة الافتراضية:", e);
+    } finally {
+        showLoader(false);
     }
 
     renderProducts();
+    updateCartUI();
 }
 
-// عرض المنتجات في الصفحة
+// عرض مؤشر التحميل (اختياري حسب تصميم واجهتك)
+function showLoader(isLoading) {
+    const loader = document.getElementById('loading-spinner');
+    if (loader) {
+        loader.style.display = isLoading ? 'block' : 'none';
+    }
+}
+
+// ==========================================
+// 3. عرض المنتجات في الصفحة
+// ==========================================
 function renderProducts() {
     const container = document.getElementById('products-container');
     if (!container) return;
 
+    if (products.length === 0) {
+        container.innerHTML = `<p class="no-products">لا توجد منتجات متاحة حالياً.</p>`;
+        return;
+    }
+
     container.innerHTML = products.map(product => `
-        <div class="product-card">
-            <img src="${product.img}" class="product-image" alt="${product.name}">
+        <div class="product-card" data-id="${product.id}">
+            <img src="${product.img}" class="product-image" alt="${product.name}" loading="lazy">
             <div class="product-info">
                 <h3 class="product-name">${product.name}</h3>
                 <p class="product-desc">${product.desc}</p>
-                <div class="product-price">${product.price} د.ج</div>
+                <div class="product-price">${product.price.toLocaleString('ar-DZ')} د.ج</div>
                 <button class="add-btn" onclick="addToCart('${product.id}')">إضافة إلى السلة</button>
             </div>
         </div>
     `).join('');
 }
 
-// فتح وإغلاق السلة الجانبية
+// ==========================================
+// 4. إدارة السلة (إضافة - إزالة - تحديث)
+// ==========================================
+
 function toggleCart() {
-    document.getElementById('cart-sidebar').classList.toggle('active');
+    const sidebar = document.getElementById('cart-sidebar');
+    if (sidebar) sidebar.classList.toggle('active');
 }
 
-// إضافة منتج للسلة
+// إضافة منتج للسلة مع حساب الكمية
 function addToCart(productId) {
     const product = products.find(p => String(p.id) === String(productId));
-    if (product) {
-        cart.push(product);
+    if (!product) return;
+
+    const existingIndex = cart.findIndex(item => String(item.id) === String(productId));
+    if (existingIndex > -1) {
+        cart[existingIndex].qty += 1;
+    } else {
+        cart.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            qty: 1
+        });
+    }
+
+    saveCart();
+    updateCartUI();
+}
+
+// تغيير الكمية داخل السلة
+function updateQuantity(index, change) {
+    if (cart[index]) {
+        cart[index].qty += change;
+        if (cart[index].qty <= 0) {
+            cart.splice(index, 1);
+        }
+        saveCart();
         updateCartUI();
     }
 }
 
-// إزالة منتج من السلة
+// إزالة عنصر من السلة
 function removeFromCart(index) {
     cart.splice(index, 1);
+    saveCart();
     updateCartUI();
 }
 
-// تحديث واجهة السلة والعدادات
+// حفظ السلة محلياً
+function saveCart() {
+    localStorage.setItem('luxury_perfumes_cart', JSON.stringify(cart));
+}
+
+// تحديث واجهة السلة
 function updateCartUI() {
-    document.getElementById('cart-count').innerText = cart.length;
+    const totalCount = cart.reduce((sum, item) => sum + item.qty, 0);
+    const cartCountEl = document.getElementById('cart-count');
+    if (cartCountEl) cartCountEl.innerText = totalCount;
+
     const cartList = document.getElementById('cart-items');
+    if (!cartList) return;
+
     cartList.innerHTML = '';
-    let total = 0;
+    let totalAmount = 0;
 
     cart.forEach((item, index) => {
-        total += item.price;
+        const itemTotal = item.price * item.qty;
+        totalAmount += itemTotal;
+
         const li = document.createElement('li');
         li.className = 'cart-item-ui';
         li.innerHTML = `
-            <span>${item.name}</span>
-            <span>${item.price} د.ج <button class="remove-item-btn" onclick="removeFromCart(${index})">&times;</button></span>
+            <div class="cart-item-details">
+                <span class="cart-item-name">${item.name}</span>
+                <span class="cart-item-price">${item.price.toLocaleString('ar-DZ')} د.ج</span>
+            </div>
+            <div class="cart-item-actions">
+                <button onclick="updateQuantity(${index}, -1)">-</button>
+                <span>${item.qty}</span>
+                <button onclick="updateQuantity(${index}, 1)">+</button>
+                <button class="remove-item-btn" onclick="removeFromCart(${index})">&times;</button>
+            </div>
         `;
         cartList.appendChild(li);
     });
 
-    document.getElementById('cart-total').innerText = total;
+    const cartTotalEl = document.getElementById('cart-total');
+    if (cartTotalEl) cartTotalEl.innerText = totalAmount.toLocaleString('ar-DZ');
 }
 
 // ==========================================
-// إرسال الطلب وحفظه في Firebase + التحويل للواتساب
+// 5. حفظ الطلب في Firebase والتحويل للواتساب
 // ==========================================
 async function sendOrderToWhatsapp() {
     if (cart.length === 0) {
@@ -138,52 +208,65 @@ async function sendOrderToWhatsapp() {
         return;
     }
 
-    // طلب رقم الهاتف من الزبون للوحة التحكم
-    const customerPhone = prompt("يرجى إدخال رقم هاتفك لتأكيد الطلب:");
-    if (!customerPhone) {
+    const customerName = prompt("اسمك الكريم لتأكيد الطلب:") || "زبون المتجر";
+    const customerPhone = prompt("يرجى إدخال رقم هاتفك:");
+
+    if (!customerPhone || customerPhone.trim() === "") {
         alert("رقم الهاتف مطلوب لتأكيد الطلب!");
         return;
     }
 
-    const customerName = prompt("اسمك الكريم (اختياري):") || "زبون المتجر";
-
-    let total = 0;
+    let grandTotal = 0;
     const itemsList = cart.map(item => {
-        total += item.price;
-        return { name: item.name, price: item.price };
+        const itemTotal = item.price * item.qty;
+        grandTotal += itemTotal;
+        return {
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.qty,
+            subtotal: itemTotal
+        };
     });
 
-    // 1. تسجيل الطلب تلقائياً في Firebase لوحة التحكم
+    // 1. تسجيل الطلب في Firebase
     try {
         await db.collection("orders").add({
-            customerName: customerName,
-            phone: customerPhone,
+            customerName: customerName.trim(),
+            phone: customerPhone.trim(),
             items: itemsList,
-            total: total,
+            total: grandTotal,
+            status: "pending", // حالة الطلب
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
     } catch (e) {
-        console.error("خطأ في حفظ الطلب في اللوحة:", e);
+        console.error("خطأ أثناء حفظ الطلب في قواعد البيانات:", e);
     }
 
-    // 2. إعداد رسالة الواتساب
+    // 2. صياغة نص الرسالة للواتساب
     let message = "👑 *طلب جديد من متجر عطور الفخامة* 👑\n\n";
-    message += `👤 *الزبون:* ${customerName}\n`;
-    message += `📱 *الهاتف:* ${customerPhone}\n\n`;
-    message += "أود طلب المنتجات التالية:\n";
+    message += `👤 *الزبون:* ${customerName.trim()}\n`;
+    message += `📱 *الهاتف:* ${customerPhone.trim()}\n\n`;
+    message += "*المنتجات المطلوبة:*\n";
     
     cart.forEach((item, idx) => {
-        message += `${idx + 1}. *${item.name}* (${item.price} د.ج)\n`;
+        message += `${idx + 1}. *${item.name}*\n   الكمية: ${item.qty} | السعر: ${item.price * item.qty} د.ج\n`;
     });
     
-    message += `\n💰 *الحساب الإجمالي:* ${total} د.ج\n`;
+    message += `\n💰 *الإجمالي الكلي:* ${grandTotal.toLocaleString('ar-DZ')} د.ج\n`;
     message += "-----------------------------\n";
     message += "يرجى تأكيد الطلب لتزويدكم بمعلومات الشحن والدفع.";
-    
-    // 3. التحويل للواتساب عبر الرقم الديناميكي المجلوب من اللوحة
+
+    // 3. مسح السلة بعد نجاح إعداد الطلب
+    cart = [];
+    saveCart();
+    updateCartUI();
+    toggleCart();
+
+    // 4. فتح رابط الواتساب
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/${currentWhatsappNumber}?text=${encodedMessage}`, '_blank');
 }
 
-// تشغيل جلب البيانات والميزات عند فتح الصفحة
-window.onload = initStore;
+// تشغيل التطبيق عند تحميل DOM
+document.addEventListener('DOMContentLoaded', initStore);
