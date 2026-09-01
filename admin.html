@@ -1,3 +1,104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم المتجر - عطور الفخامة</title>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, sans-serif; }
+        body { background: #0f172a; color: #fff; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: #1e293b; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #334155; }
+        input, select, textarea, button { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; }
+        button { background: #0284c7; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background: #0369a1; }
+        .btn-danger { background: #e11d48; }
+        .btn-danger:hover { background: #be123c; }
+        .hidden { display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #334155; padding: 10px; text-align: right; }
+        th { background: #0f172a; }
+        .img-preview-container { display: flex; gap: 10px; margin: 10px 0; }
+        .img-preview { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #d4af37; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- 1. شاشة تسجيل الدخول -->
+    <div id="login-screen" class="card" style="max-width:400px; margin: 50px auto; text-align: center;">
+        <h2>🔐 تسجيل الدخول للوحة التحكم</h2>
+        <input type="password" id="admin-pass" placeholder="أدخل كلمة السر">
+        <button type="button" onclick="checkPassword()">دخول</button>
+        <p id="login-error" style="color:#f43f5e;" class="hidden">كلمة السر غير صحيحة!</p>
+    </div>
+
+    <!-- 2. محتوى لوحة التحكم -->
+    <div id="dashboard-screen" class="hidden">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>👑 لوحة إدارة المتجر</h1>
+            <button onclick="logout()" style="width: auto; padding: 8px 15px;" class="btn-danger">خروج</button>
+        </div>
+
+        <!-- 🔑 إعدادات تغيير كلمة السر -->
+        <div class="card">
+            <h3>🔑 تغيير كلمة سر اللوحة</h3>
+            <input type="password" id="new-pass" placeholder="كلمة السر الجديدة">
+            <button onclick="changePassword()" style="background: #d4af37; color: #000;">تحديث كلمة السر</button>
+        </div>
+
+        <!-- 📱 إعدادات رقم الواتساب -->
+        <div class="card">
+            <h3>📱 رقم الواتساب الخاص بالاستلام</h3>
+            <input type="text" id="whatsapp-num" placeholder="مثال: 213656708603">
+            <button onclick="saveWhatsapp()">حفظ الرقم</button>
+        </div>
+
+        <!-- ➕ إضافة منتج جديد -->
+        <div class="card">
+            <h3>➕ إضافة عطر جديد للمتجر</h3>
+            <input type="text" id="p-name" placeholder="اسم العطر">
+            <input type="number" id="p-price" placeholder="السعر (د.ج)">
+            
+            <label style="font-size: 0.9rem; color: #cbd5e1;">التصنيف:</label>
+            <select id="p-category">
+                <option value="عطور صيفية">عطور صيفية</option>
+                <option value="عطور رجالية">عطور رجالية</option>
+                <option value="عطور نسائية">عطور نسائية</option>
+                <option value="عطور للمناسبات">عطور للمناسبات</option>
+                <option value="الأكثر مبيعاً">الأكثر مبيعاً</option>
+            </select>
+
+            <label style="font-size: 0.9rem; color: #cbd5e1;">اختر صور العطر من المعرض (3 صور كحد أقصى):</label>
+            <input type="file" id="p-files" accept="image/*" multiple onchange="previewImages(event)">
+            <div class="img-preview-container" id="preview-box"></div>
+
+            <textarea id="p-desc" placeholder="وصف العطر"></textarea>
+            <button onclick="addProduct()">نشر المنتج في المتجر</button>
+        </div>
+
+        <!-- 📦 إدارة المنتجات الحالية -->
+        <div class="card">
+            <h3>📦 المنتجات الحالية</h3>
+            <div id="products-list">تحميل المنتجات...</div>
+        </div>
+
+        <!-- 🛍️ قائمة الطلبات -->
+        <div class="card">
+            <h3>🛍️ الطلبات المسجلة</h3>
+            <div id="orders-list">تحميل الطلبات...</div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
 // ⚠️ ضع مفاتيح Firebase الخاصة بك هنا
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
@@ -27,12 +128,11 @@ async function checkPassword() {
             const doc = await db.collection("settings").doc("security").get();
             if (doc.exists && doc.data().password) {
                 validPass = doc.data().password;
-                localStorage.setItem('admin_pass', validPass); // كاش للسرعة
+                localStorage.setItem('admin_pass', validPass);
             }
         } catch(e) { console.log(e); }
     }
 
-    // القيمة الافتراضية لأول مرة
     if (!validPass) validPass = "admin";
 
     if (inputPass === validPass) {
@@ -49,10 +149,8 @@ async function changePassword() {
     const newPass = document.getElementById('new-pass').value.trim();
     if (!newPass) { alert("يرجى كتابة كلمة السر الجديدة!"); return; }
 
-    // حفظ محلي فوري
     localStorage.setItem('admin_pass', newPass);
 
-    // حفظ في Firebase للمزامنة مع باقي أجهزة التاجر
     if (db) {
         try {
             await db.collection("settings").doc("security").set({ password: newPass }, { merge: true });
@@ -69,7 +167,7 @@ function logout() {
     location.reload();
 }
 
-// 🖼️ معالجة الضغط الضوئي للصور (أقصى سرعة تحميل)
+// 🖼️ معالجة الضغط الضوئي للصور
 function previewImages(event) {
     const files = Array.from(event.target.files);
     if (files.length > 3) {
@@ -85,19 +183,18 @@ function previewImages(event) {
     files.slice(0, 3).forEach(file => {
         const reader = new FileReader();
         reader.onload = function(e) {
-            // ضغط الصورة تلقائياً لتقليل حجمها وسرعة جلبها للزبائن
             const img = new Image();
             img.src = e.target.result;
             img.onload = function() {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                const maxWidth = 600; // حجم ممتاز وسريع جداً للموبايل
+                const maxWidth = 600;
                 const scale = maxWidth / img.width;
                 canvas.width = (img.width > maxWidth) ? maxWidth : img.width;
                 canvas.height = (img.width > maxWidth) ? (img.height * scale) : img.height;
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 
-                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7); // ضغط 70%
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
                 base64Images.push(compressedBase64);
 
                 const previewImg = document.createElement('img');
@@ -113,13 +210,11 @@ function previewImages(event) {
 async function loadDashboardData() {
     if (!db) return;
 
-    // جلب الواتساب
     const configDoc = await db.collection("settings").doc("config").get();
     if (configDoc.exists && configDoc.data().whatsapp) {
         document.getElementById('whatsapp-num').value = configDoc.data().whatsapp;
     }
 
-    // جلب المنتجات
     db.collection("products").onSnapshot(snapshot => {
         let html = '<table><tr><th>الصورة</th><th>الاسم</th><th>التصنيف</th><th>السعر</th><th>إجراء</th></tr>';
         snapshot.forEach(doc => {
@@ -137,7 +232,6 @@ async function loadDashboardData() {
         document.getElementById('products-list').innerHTML = html;
     });
 
-    // جلب الطلبات
     db.collection("orders").orderBy("createdAt", "desc").onSnapshot(snapshot => {
         let html = '<table><tr><th>الزبون</th><th>الهاتف</th><th>المجموع</th><th>التاريخ</th></tr>';
         snapshot.forEach(doc => {
@@ -196,3 +290,6 @@ async function deleteProduct(id) {
         await db.collection("products").doc(id).delete();
     }
 }
+</script>
+</body>
+</html>
