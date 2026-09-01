@@ -3,134 +3,410 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة التحكم - عطور الفخامة</title>
-    <link rel="stylesheet" href="admin-style.css">
-    <!-- Firebase SDKs -->
+    <title>لوحة تحكم المتجر - عطور الفخامة</title>
+    <!-- Firebase SDKs for Realtime Database -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, sans-serif; }
+        html, body { 
+            background: #0f172a; 
+            color: #fff; 
+            margin: 0; 
+            padding: 10px; 
+            width: 100%; 
+            overflow-x: hidden; /* يمنع التمدد الأفقي للشاشة */
+        }
+        .container { max-width: 1000px; margin: 0 auto; width: 100%; }
+        .card { 
+            background: #1e293b; 
+            padding: 15px; 
+            border-radius: 10px; 
+            margin-bottom: 20px; 
+            border: 1px solid #334155; 
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden; 
+        }
+        input, select, textarea, button { 
+            width: 100%; 
+            padding: 10px; 
+            margin: 8px 0; 
+            border-radius: 6px; 
+            border: 1px solid #475569; 
+            background: #0f172a; 
+            color: #fff; 
+        }
+        button { background: #0284c7; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background: #0369a1; }
+        .btn-danger { background: #e11d48; }
+        .btn-danger:hover { background: #be123c; }
+        .btn-copy { 
+            background: #334155; 
+            color: #38bdf8; 
+            border: 1px solid #0284c7; 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-size: 0.8rem; 
+            cursor: pointer; 
+            margin-top: 5px; 
+            width: auto; 
+            display: inline-block; 
+        }
+        .btn-copy:hover { background: #0284c7; color: #fff; }
+        .hidden { display: none; }
+
+        /* جعل الجداول قابلة للتمرير داخل إطارها فقط دون تخريب الشاشة */
+        .table-responsive { 
+            width: 100%; 
+            overflow-x: auto; 
+            -webkit-overflow-scrolling: touch; 
+            margin-top: 10px;
+            border-radius: 6px;
+        }
+        table { 
+            width: 100%; 
+            min-width: 650px; /* يحافظ على تنسيق جدول الطلبات دون انكماش */
+            border-collapse: collapse; 
+            font-size: 0.85rem; 
+        }
+        th, td { 
+            border: 1px solid #334155; 
+            padding: 10px; 
+            text-align: right; 
+            vertical-align: middle; 
+            word-break: break-word; 
+        }
+        th { background: #0f172a; color: #d4af37; white-space: nowrap; }
+
+        .img-preview-container { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+        .img-preview { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #d4af37; }
+        .items-list-text { margin: 0; padding-right: 15px; font-size: 0.8rem; color: #cbd5e1; }
+    </style>
 </head>
 <body>
 
-<div class="dashboard-container">
+<div class="container">
 
-    <!-- 1️⃣ قسم رقم الواتساب الخاص بالاستلام -->
-    <div class="card">
-        <div class="card-title">📱 رقم الواتساب الخاص بالاستلام</div>
-        <form id="whatsapp-form" onsubmit="saveWhatsappNumber(event)">
-            <div class="form-group">
-                <!-- تم تعديل الـ placeholder ليظهر كرمز إرشادي وليس رقم حقيقي -->
-                <input type="tel" id="whatsapp-input" placeholder="مثال: 213XXXXXXXXX" autocomplete="off" required>
-            </div>
-            <button type="submit" class="btn-primary">حفظ الرقم</button>
-        </form>
+    <!-- 1. شاشة تسجيل الدخول -->
+    <div id="login-screen" class="card" style="max-width:400px; margin: 50px auto; text-align: center;">
+        <h2>🔐 تسجيل الدخول للوحة التحكم</h2>
+        <input type="password" id="admin-pass" placeholder="أدخل كلمة السر">
+        <button type="button" onclick="checkPassword()">دخول</button>
+        <p id="login-error" style="color:#f43f5e;" class="hidden">كلمة السر غير صحيحة!</p>
     </div>
 
-    <!-- 2️⃣ قسم إضافة عطر جديد للمتجر -->
-    <div class="card">
-        <div class="card-title">➕ إضافة عطر جديد للمتجر</div>
-        <form id="add-product-form" onsubmit="handleAddProduct(event)">
+    <!-- 2. محتوى لوحة التحكم -->
+    <div id="dashboard-screen" class="hidden">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="margin: 0; font-size: 1.3rem;">👑 لوحة إدارة المتجر</h2>
+            <button onclick="logout()" style="width: auto; padding: 8px 15px;" class="btn-danger">خروج</button>
+        </div>
+
+        <!-- 🔑 إعدادات تغيير كلمة السر -->
+        <div class="card">
+            <h3>🔑 تغيير كلمة سر اللوحة</h3>
+            <input type="password" id="new-pass" placeholder="كلمة السر الجديدة" autocomplete="off">
+            <button onclick="changePassword()" style="background: #d4af37; color: #000;">تحديث كلمة السر</button>
+        </div>
+
+        <!-- 📱 إعدادات رقم الواتساب -->
+        <div class="card">
+            <h3>📱 رقم الواتساب الخاص بالاستلام</h3>
+            <!-- إظهار المثال فقط وإغلاق الاقتراحات التلقائية -->
+            <input type="text" id="whatsapp-num" placeholder="مثال: 213XXXXXXXXX" autocomplete="off">
+            <button onclick="saveWhatsapp()">حفظ الرقم</button>
+        </div>
+
+        <!-- ➕ إضافة منتج جديد -->
+        <div class="card">
+            <h3>➕ إضافة عطر جديد للمتجر</h3>
+            <!-- إيقاف اقتراحات الأسماء القديمة -->
+            <input type="text" id="p-name" placeholder="اسم العطر" autocomplete="off">
+            <input type="number" id="p-price" placeholder="السعر (د.ج)" autocomplete="off">
             
-            <div class="form-group">
-                <!-- إلغاء اقتراح الأسماء القديمة تلقائياً -->
-                <input type="text" id="p-name" placeholder="اسم العطر" autocomplete="off" required>
-            </div>
+            <!-- حقل الكمية المتوفرة جديد -->
+            <input type="number" id="p-stock" placeholder="الكمية المتوفرة في المخزن (مثال: 10)" autocomplete="off" min="1">
+            
+            <label style="font-size: 0.9rem; color: #cbd5e1;">التصنيف:</label>
+            <select id="p-category">
+                <option value="عطور صيفية">عطور صيفية</option>
+                <option value="عطور رجالية">عطور رجالية</option>
+                <option value="عطور نسائية">عطور نسائية</option>
+                <option value="عطور للمناسبات">عطور للمناسبات</option>
+                <option value="الأكثر مبيعاً">الأكثر مبيعاً</option>
+            </select>
 
-            <div class="form-group">
-                <input type="number" id="p-price" placeholder="السعر (د.ج)" autocomplete="off" required>
-            </div>
+            <label style="font-size: 0.9rem; color: #cbd5e1;">اختر صور العطر من المعرض (3 صور كحد أقصى):</label>
+            <input type="file" id="p-files" accept="image/*" multiple onchange="previewImages(event)">
+            <div class="img-preview-container" id="preview-box"></div>
 
-            <!-- إضافة حقل الكمية المتوفرة -->
-            <div class="form-group">
-                <input type="number" id="p-stock" placeholder="الكمية المتوفرة في المخزن (مثال: 10)" autocomplete="off" min="1" required>
-            </div>
+            <textarea id="p-desc" placeholder="وصف العطر" autocomplete="off"></textarea>
+            <button onclick="addProduct()">نشر المنتج في المتجر</button>
+        </div>
 
-            <div class="form-group">
-                <label>التصنيف:</label>
-                <select id="p-category">
-                    <option value="عطور صيفية">عطور صيفية</option>
-                    <option value="عطور رجالية">عطور رجالية</option>
-                    <option value="عطور نسائية">عطور نسائية</option>
-                    <option value="عطور للمناسبات">عطور للمناسبات</option>
-                    <option value="الأكثر مبيعاً">الأكثر مبيعاً</option>
-                </select>
-            </div>
+        <!-- 📦 إدارة المنتجات الحالية -->
+        <div class="card">
+            <h3>📦 المنتجات الحالية</h3>
+            <div class="table-responsive" id="products-list">تحميل المنتجات...</div>
+        </div>
 
-            <div class="form-group">
-                <label>اختر صور العطر من المعرض (3 صور كحد أقصى):</label>
-                <input type="file" id="p-images" multiple accept="image/*" class="file-input">
+        <!-- 🛍️ قائمة الطلبات المسجلة -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                <h3 style="margin:0;">🛍️ الطلبات المسجلة</h3>
+                <button onclick="deleteAllOrders()" class="btn-danger" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">🗑️ حذف جميع الطلبات</button>
             </div>
+            <div class="table-responsive" id="orders-list">تحميل الطلبات...</div>
+        </div>
 
-            <div class="form-group">
-                <textarea id="p-desc" rows="3" placeholder="وصف العطر" autocomplete="off"></textarea>
-            </div>
-
-            <button type="submit" class="btn-primary">نشر المنتج في المتجر</button>
-        </form>
     </div>
 
 </div>
 
 <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyC3Y1n6gd-XtJdv-7UKOesb9-Lgc2lII0c",
-      authDomain: "otour-elfakhama-cf76d.firebaseapp.com",
-      projectId: "otour-elfakhama-cf76d",
-      storageBucket: "otour-elfakhama-cf76d.firebasestorage.app",
-      messagingSenderId: "843441752510",
-      appId: "1:843441752510:web:94b201def5ea9510c491ef",
-      databaseURL: "https://otour-elfakhama-cf76d-default-rtdb.firebaseio.com"
-    };
+// 🔑 مفاتيح Firebase الخاصة بمشروعك
+const firebaseConfig = {
+  apiKey: "AIzaSyC3Y1n6gd-XtJdv-7UKOesb9-Lgc2lII0c",
+  authDomain: "otour-elfakhama-cf76d.firebaseapp.com",
+  projectId: "otour-elfakhama-cf76d",
+  storageBucket: "otour-elfakhama-cf76d.firebasestorage.app",
+  messagingSenderId: "843441752510",
+  appId: "1:843441752510:web:94b201def5ea9510c491ef",
+  databaseURL: "https://otour-elfakhama-cf76d-default-rtdb.firebaseio.com"
+};
 
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+let db = null;
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+}
 
-    function saveWhatsappNumber(e) {
-        e.preventDefault();
-        const num = document.getElementById('whatsapp-input').value.trim();
-        if (num) {
-            db.ref("settings/config/whatsapp").set(num).then(() => {
-                alert("تم حفظ رقم الواتساب بنجاح!");
+let base64Images = [];
+
+async function checkPassword() {
+    const inputPass = document.getElementById('admin-pass').value.trim();
+    let validPass = localStorage.getItem('admin_pass');
+
+    if (!validPass && db) {
+        try {
+            const snap = await db.ref("settings/security/password").once('value');
+            if (snap.exists()) {
+                validPass = snap.val();
+                localStorage.setItem('admin_pass', validPass);
+            }
+        } catch(e) { console.log(e); }
+    }
+
+    if (!validPass) validPass = "admin";
+
+    if (inputPass === validPass) {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('dashboard-screen').classList.remove('hidden');
+        if (db) loadDashboardData();
+    } else {
+        document.getElementById('login-error').classList.remove('hidden');
+    }
+}
+
+async function changePassword() {
+    const newPass = document.getElementById('new-pass').value.trim();
+    if (!newPass) { alert("يرجى كتابة كلمة السر الجديدة!"); return; }
+
+    localStorage.setItem('admin_pass', newPass);
+
+    if (db) {
+        try {
+            await db.ref("settings/security").update({ password: newPass });
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    alert("تم تحديث كلمة السر بنجاح!");
+    document.getElementById('new-pass').value = '';
+}
+
+function logout() {
+    location.reload();
+}
+
+function previewImages(event) {
+    const files = Array.from(event.target.files);
+    if (files.length > 3) {
+        alert("يمكنك اختيار 3 صور كحد أقصى فقط!");
+        event.target.value = "";
+        return;
+    }
+
+    base64Images = [];
+    const box = document.getElementById('preview-box');
+    box.innerHTML = '';
+
+    files.slice(0, 3).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const maxWidth = 600;
+                const scale = maxWidth / img.width;
+                canvas.width = (img.width > maxWidth) ? maxWidth : img.width;
+                canvas.height = (img.width > maxWidth) ? (img.height * scale) : img.height;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                base64Images.push(compressedBase64);
+
+                const previewImg = document.createElement('img');
+                previewImg.src = compressedBase64;
+                previewImg.className = 'img-preview';
+                box.appendChild(previewImg);
+            }
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function copyPhone(phone) {
+    navigator.clipboard.writeText(phone).then(() => {
+        alert("تم نسخ الرقم: " + phone);
+    }).catch(err => {
+        console.error("فشل النسخ: ", err);
+    });
+}
+
+function loadDashboardData() {
+    if (!db) return;
+
+    // جلب المنتجات وعرضها مع الكمية المتوفرة
+    db.ref("products").on('value', snapshot => {
+        let html = '<table><tr><th>الصورة</th><th>الاسم</th><th>التصنيف</th><th>السعر</th><th>الكمية</th><th>إجراء</th></tr>';
+        if (snapshot.exists()) {
+            snapshot.forEach(child => {
+                const p = child.val();
+                const key = child.key;
+                const img = (p.images && p.images.length > 0) ? p.images[0] : '';
+                const stock = (p.stock !== undefined && p.stock !== null) ? p.stock : 'غير محدد';
+                html += `<tr>
+                    <td><img src="${img}" width="40" height="40" style="object-fit:cover; border-radius:4px;"></td>
+                    <td>${p.name}</td>
+                    <td><small>${p.category || 'عام'}</small></td>
+                    <td>${p.price} د.ج</td>
+                    <td><b style="color:#38bdf8;">${stock}</b></td>
+                    <td><button class="btn-danger" style="padding:5px 10px; width:auto;" onclick="deleteProduct('${key}')">حذف</button></td>
+                </tr>`;
             });
         }
-    }
+        html += '</table>';
+        document.getElementById('products-list').innerHTML = html;
+    });
 
-    async function handleAddProduct(e) {
-        e.preventDefault();
-        const name = document.getElementById('p-name').value.trim();
-        const price = parseFloat(document.getElementById('p-price').value);
-        const stock = parseInt(document.getElementById('p-stock').value);
-        const category = document.getElementById('p-category').value;
-        const desc = document.getElementById('p-desc').value.trim();
-        const files = document.getElementById('p-images').files;
+    // جلب وعرض الطلبات المسجلة
+    db.ref("orders").on('value', snapshot => {
+        let html = '<table><tr><th>الزبون</th><th>الهاتف</th><th>الولاية والعنوان</th><th>تفاصيل الطلبيات</th><th>المجموع</th><th>التاريخ</th><th>إجراء</th></tr>';
+        if (snapshot.exists()) {
+            snapshot.forEach(child => {
+                const o = child.val();
+                const key = child.key;
+                const date = o.createdAt ? (typeof o.createdAt === 'number' ? new Date(o.createdAt).toLocaleString('ar-DZ') : o.createdAt) : 'الآن';
+                const phone = o.phone || '-';
+                
+                let itemsHtml = '<ul class="items-list-text">';
+                if (o.items && Array.isArray(o.items)) {
+                    o.items.forEach(it => {
+                        itemsHtml += `<li>${it.name} (الكمية: ${it.qty})</li>`;
+                    });
+                } else {
+                    itemsHtml += '<li>غير موضح</li>';
+                }
+                itemsHtml += '</ul>';
 
-        let imageUrls = [];
-        for (let i = 0; i < Math.min(files.length, 3); i++) {
-            const base64 = await convertBase64(files[i]);
-            imageUrls.push(base64);
+                html += `<tr>
+                    <td><b>${o.customerName || 'زبون'}</b></td>
+                    <td>
+                        <span>${phone}</span><br>
+                        ${phone !== '-' ? `<button class="btn-copy" onclick="copyPhone('${phone}')">📋 نسخ</button>` : ''}
+                    </td>
+                    <td><small>${o.state || ''} - ${o.address || ''}</small></td>
+                    <td>${itemsHtml}</td>
+                    <td style="color:#d4af37; font-weight:bold;">${o.total} د.ج</td>
+                    <td><small>${date}</small></td>
+                    <td><button class="btn-danger" style="padding:5px 10px; width:auto;" onclick="deleteOrder('${key}')">حذف</button></td>
+                </tr>`;
+            });
+        } else {
+            html += '<tr><td colspan="7" style="text-align:center; color:#94a3b8;">لا توجد طلبات مسجلة حالياً</td></tr>';
         }
+        html += '</table>';
+        document.getElementById('orders-list').innerHTML = html;
+    });
+}
 
-        db.ref("products").push({
-            name: name,
-            price: price,
-            stock: stock,
-            category: category,
-            desc: desc,
-            images: imageUrls,
-            createdAt: Date.now()
-        }).then(() => {
-            alert("تم نشر العطر بنجاح!");
-            document.getElementById('add-product-form').reset();
-        });
-    }
+async function saveWhatsapp() {
+    if (!db) return;
+    const num = document.getElementById('whatsapp-num').value.trim();
+    if (!num) { alert("يرجى إدخال الرقم!"); return; }
+    await db.ref("settings/config").update({ whatsapp: num });
+    alert("تم حفظ رقم الواتساب بنجاح!");
+}
 
-    function convertBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = error => reject(error);
-        });
+async function addProduct() {
+    if (!db) return;
+    const name = document.getElementById('p-name').value.trim();
+    const price = Number(document.getElementById('p-price').value);
+    const stock = Number(document.getElementById('p-stock').value);
+    const category = document.getElementById('p-category').value;
+    const desc = document.getElementById('p-desc').value.trim();
+
+    if (!name || !price || isNaN(stock)) { alert("يرجى ملء الاسم، السعر، والكمية المتوفرة!"); return; }
+    if (base64Images.length === 0) { alert("يرجى اختيار صورة واحدة على الأقل من المعرض!"); return; }
+
+    await db.ref("products").push({
+        name: name,
+        price: price,
+        stock: stock,
+        category: category,
+        images: base64Images,
+        desc: desc,
+        createdAt: Date.now()
+    });
+
+    document.getElementById('p-name').value = '';
+    document.getElementById('p-price').value = '';
+    document.getElementById('p-stock').value = '';
+    document.getElementById('p-desc').value = '';
+    document.getElementById('p-files').value = '';
+    document.getElementById('preview-box').innerHTML = '';
+    base64Images = [];
+    alert("تمت إضافة العطر والكمية بنجاح للمتجر!");
+}
+
+async function deleteProduct(key) {
+    if (!db) return;
+    if (confirm("هل أنت تأكد من حذف هذا المنتج؟")) {
+        await db.ref("products/" + key).remove();
     }
+}
+
+async function deleteOrder(key) {
+    if (!db) return;
+    if (confirm("هل أنت تأكد من حذف هذا الطلب؟")) {
+        await db.ref("orders/" + key).remove();
+        alert("تم حذف الطلب بنجاح!");
+    }
+}
+
+async function deleteAllOrders() {
+    if (!db) return;
+    if (confirm("⚠️ تحذير: هل أنت تأكد من حذف جميع الطلبات المسجلة نهائياً؟")) {
+        await db.ref("orders").remove();
+        alert("تم مسح كافة الطلبات بنجاح!");
+    }
+}
 </script>
 </body>
 </html>
