@@ -3,48 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>متجر عطور الفخامة</title>
-    <!-- Firebase SDKs for Realtime Database -->
+    <title>عطور الفخامة</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- تم تحديث المكتبة إلى Realtime Database لتتوافق مع قواعد البيانات لديك -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <style>
-        * { box-sizing: border-box; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
-        body { background: #0f172a; color: #fff; padding-bottom: 50px; }
-        
-        header { background: #1e293b; padding: 20px; text-align: center; border-bottom: 2px solid #d4af37; }
-        header h1 { color: #d4af37; margin-bottom: 5px; }
-
-        .container { max-width: 1100px; margin: 20px auto; padding: 0 15px; }
-        
-        /* التصنيفات */
-        .categories { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 20px; }
-        .cat-btn { background: #1e293b; color: #fff; border: 1px solid #334155; padding: 8px 16px; border-radius: 20px; cursor: pointer; white-space: nowrap; }
-        .cat-btn.active { background: #d4af37; color: #000; font-weight: bold; border-color: #d4af37; }
-
-        /* شبكة المنتجات */
-        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
-        .product-card { background: #1e293b; border-radius: 12px; border: 1px solid #334155; overflow: hidden; display: flex; flex-direction: column; }
-        .product-img { width: 100%; height: 220px; object-fit: cover; background: #0f172a; }
-        .product-info { padding: 15px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
-        .product-title { font-size: 1.1rem; margin-bottom: 8px; color: #f8fafc; }
-        .product-price { color: #d4af37; font-size: 1.2rem; font-weight: bold; margin-bottom: 12px; }
-        .buy-btn { background: #25d366; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; text-decoration: none; text-align: center; display: block; }
-        .buy-btn:hover { background: #1ebc57; }
-
-        .empty-msg { text-align: center; color: #94a3b8; grid-column: 1 / -1; padding: 40px; }
-    </style>
 </head>
 <body>
 
-<header>
-    <h1>✨ عطور الفخامة ✨</h1>
-    <p>أرقى العطور العالمية بين يديك</p>
-</header>
+    <header>
+        <h1>عطور الفخامة</h1>
+        <div class="delivery-badge">🚚 التوصيل متوفر 69 ولاية</div>
+        <button id="open-cart" onclick="toggleCart()" style="position: absolute; left: 15px; top: 20px; background: #d4af37; border: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; cursor: pointer;">السلة (<span id="cart-count">0</span>)</button>
+    </header>
 
-<div class="container">
-
-    <!-- قائمة التصنيفات -->
-    <div class="categories">
+    <!-- شريط علوي متقطع للتصنيفات -->
+    <div class="categories-bar">
         <button class="cat-btn active" onclick="filterCategory('الكل', this)">الكل</button>
         <button class="cat-btn" onclick="filterCategory('عطور صيفية', this)">عطور صيفية</button>
         <button class="cat-btn" onclick="filterCategory('عطور رجالية', this)">عطور رجالية</button>
@@ -53,91 +27,99 @@
         <button class="cat-btn" onclick="filterCategory('الأكثر مبيعاً', this)">الأكثر مبيعاً</button>
     </div>
 
-    <!-- شبكة عرض المنتجات -->
-    <div class="products-grid" id="products-container">
-        <div class="empty-msg">جاري تحميل العطور...</div>
+    <!-- معرض المنتجات -->
+    <main class="products-grid" id="products-container">
+        <div style="text-align: center; color: #94a3b8; grid-column: 1 / -1; padding: 40px;">جاري تحميل العطور...</div>
+    </main>
+
+    <!-- سلة المشتريات -->
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-header">
+            <h3>سلة المشتريات</h3>
+            <button onclick="toggleCart()" style="background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer;">✕</button>
+        </div>
+        <div class="cart-items" id="cart-items-list">
+            <!-- عناصر السلة -->
+        </div>
+        <div class="cart-footer">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-size:1.1rem;">
+                <span>الإجمالي:</span>
+                <span id="cart-total" class="gold-text">0 د.ج</span>
+            </div>
+            <button class="whatsapp-submit" onclick="sendOrderWhatsApp()">تأكيد الطلب عبر واتساب</button>
+        </div>
     </div>
 
-</div>
+    <!-- كود الإتصال بقاعدة البيانات وجلب المنتجات -->
+    <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyC3Y1n6gd-XtJdv-7UKOesb9-Lgc2lII0c",
+      authDomain: "otour-elfakhama-cf76d.firebaseapp.com",
+      projectId: "otour-elfakhama-cf76d",
+      storageBucket: "otour-elfakhama-cf76d.firebasestorage.app",
+      messagingSenderId: "843441752510",
+      appId: "1:843441752510:web:94b201def5ea9510c491ef",
+      databaseURL: "https://otour-elfakhama-cf76d-default-rtdb.firebaseio.com"
+    };
 
-<script>
-// إعدادات Firebase الخاصة بالمشروع
-const firebaseConfig = {
-  apiKey: "AIzaSyC3Y1n6gd-XtJdv-7UKOesb9-Lgc2lII0c",
-  authDomain: "otour-elfakhama-cf76d.firebaseapp.com",
-  projectId: "otour-elfakhama-cf76d",
-  storageBucket: "otour-elfakhama-cf76d.firebasestorage.app",
-  messagingSenderId: "843441752510",
-  appId: "1:843441752510:web:94b201def5ea9510c491ef",
-  databaseURL: "https://otour-elfakhama-cf76d-default-rtdb.firebaseio.com"
-};
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+    let allProducts = [];
 
-let allProducts = [];
-let whatsappNumber = "213656708603"; // الرقم الافتراضي
-
-// جلب رقم الواتساب والمنتجات
-function init() {
-    db.ref("settings/config/whatsapp").on('value', snap => {
-        if (snap.exists()) whatsappNumber = snap.val();
-    });
-
-    db.ref("products").on('value', snap => {
+    // جلب المنتجات تلقائياً من Realtime Database
+    db.ref("products").on('value', snapshot => {
         allProducts = [];
-        if (snap.exists()) {
-            snap.forEach(child => {
+        if (snapshot.exists()) {
+            snapshot.forEach(child => {
                 allProducts.push({ id: child.key, ...child.val() });
             });
         }
         renderProducts(allProducts);
     });
-}
 
-// عرض المنتجات في الصفحة
-function renderProducts(products) {
-    const container = document.getElementById('products-container');
-    if (products.length === 0) {
-        container.innerHTML = '<div class="empty-msg">لا تتوفر عطور في هذا التصنيف حالياً.</div>';
-        return;
-    }
+    function renderProducts(products) {
+        const container = document.getElementById('products-container');
+        if (!container) return;
 
-    let html = '';
-    products.forEach(p => {
-        const img = (p.images && p.images.length > 0) ? p.images[0] : 'https://via.placeholder.com/300?text=No+Image';
-        const msg = encodeURIComponent(`مرحباً، أريد التوصية لشراء عطر: ${p.name} - السعر: ${p.price} د.ج`);
-        const waUrl = `https://wa.me/${whatsappNumber}?text=${msg}`;
+        if (products.length === 0) {
+            container.innerHTML = '<div style="text-align: center; color: #94a3b8; grid-column: 1 / -1; padding: 40px;">لا تتوفر عطور حالياً.</div>';
+            return;
+        }
 
-        html += `
-        <div class="product-card">
-            <img src="${img}" class="product-img" alt="${p.name}">
-            <div class="product-info">
-                <div>
-                    <h3 class="product-title">${p.name}</h3>
-                    <div class="product-price">${p.price} د.ج</div>
+        let html = '';
+        products.forEach(p => {
+            const img = (p.images && p.images.length > 0) ? p.images[0] : 'https://via.placeholder.com/300?text=No+Image';
+            
+            html += `
+            <div class="product-card" style="background:#1e293b; border-radius:10px; padding:15px; border:1px solid #334155; display:flex; flex-direction:column; justify-content:space-between;">
+                <img src="${img}" alt="${p.name}" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
+                <h3 style="margin-bottom:5px; font-size:1.1rem; color:#fff;">${p.name}</h3>
+                <p style="color:#cbd5e1; font-size:0.85rem; margin-bottom:10px;">${p.desc || ''}</p>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:auto;">
+                    <span class="gold-text" style="color:#d4af37; font-weight:bold; font-size:1.1rem;">${p.price} د.ج</span>
+                    <button onclick="addToCart('${p.name}', ${p.price})" style="background:#0284c7; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">إضافة للسلة 🛒</button>
                 </div>
-                <a href="${waUrl}" target="_blank" class="buy-btn">طلب عبر الواتساب 💬</a>
-            </div>
-        </div>`;
-    });
-    container.innerHTML = html;
-}
-
-// تصفية حسب التصنيف
-function filterCategory(cat, btn) {
-    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-
-    if (cat === 'الكل') {
-        renderProducts(allProducts);
-    } else {
-        const filtered = allProducts.filter(p => p.category === cat);
-        renderProducts(filtered);
+            </div>`;
+        });
+        container.innerHTML = html;
     }
-}
 
-init();
-</script>
+    function filterCategory(cat, btn) {
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+
+        if (cat === 'الكل') {
+            renderProducts(allProducts);
+        } else {
+            const filtered = allProducts.filter(p => p.category === cat);
+            renderProducts(filtered);
+        }
+    }
+    </script>
+
+    <script src="script.js"></script>
 </body>
 </html>
