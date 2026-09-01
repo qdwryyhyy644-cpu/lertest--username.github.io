@@ -35,6 +35,25 @@ h1, h2, h3, .gold-text {
     font-weight: 500;
 }
 
+/* زر فتح السلة في الهيدر */
+#open-cart {
+    position: absolute;
+    left: 15px;
+    top: 20px;
+    background: #d4af37;
+    color: #121212;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+#open-cart:hover {
+    background: #b5932b;
+}
+
 /* شريط تصنيفات العطور أفقي ومتقطع */
 .categories-bar {
     display: flex;
@@ -89,7 +108,7 @@ h1, h2, h3, .gold-text {
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
-/* تمرير صور المنتج (Carousel) */
+/* تمرير صور المنتج (Carousel) مع الأسهم والنقاط */
 .slider-container {
     position: relative;
     width: 100%;
@@ -103,6 +122,7 @@ h1, h2, h3, .gold-text {
     height: 100%;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
     scrollbar-width: none;
 }
 
@@ -118,6 +138,61 @@ h1, h2, h3, .gold-text {
     scroll-snap-align: start;
 }
 
+/* أسهم التنقل للصور */
+.slider-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(18, 18, 18, 0.6);
+    color: #d4af37;
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+    z-index: 10;
+    transition: 0.2s;
+    user-select: none;
+}
+
+.slider-arrow:hover {
+    background: #d4af37;
+    color: #121212;
+}
+
+.slider-arrow.prev { left: 8px; }
+.slider-arrow.next { right: 8px; }
+
+/* نقاط الإشارة أسفل السلايدر */
+.slider-dots {
+    position: absolute;
+    bottom: 8px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    z-index: 10;
+}
+
+.dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    transition: 0.3s;
+}
+
+.dot.active {
+    background: #d4af37;
+    width: 16px;
+    border-radius: 4px;
+}
+
+/* تفاصيل المنتج */
 .product-info {
     padding: 15px;
     display: flex;
@@ -125,11 +200,54 @@ h1, h2, h3, .gold-text {
     flex-grow: 1;
 }
 
+.product-desc {
+    color: #aaa;
+    font-size: 0.85rem;
+    margin-top: 5px;
+    line-height: 1.4;
+}
+
 .product-price {
     color: #d4af37;
     font-size: 1.2rem;
     font-weight: bold;
     margin: 10px 0;
+}
+
+/* التحكم بالكمية لكارت المنتج والسلة */
+.qty-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.qty-btn {
+    background: #333;
+    color: #d4af37;
+    border: 1px solid #444;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+    font-size: 1rem;
+}
+
+.qty-btn:hover {
+    background: #d4af37;
+    color: #121212;
+}
+
+.qty-value {
+    font-weight: bold;
+    color: #fff;
+    min-width: 20px;
+    text-align: center;
 }
 
 .add-btn {
@@ -142,6 +260,7 @@ h1, h2, h3, .gold-text {
     font-weight: bold;
     margin-top: auto;
     transition: 0.2s ease;
+    width: 100%;
 }
 
 .add-btn:hover {
@@ -149,7 +268,7 @@ h1, h2, h3, .gold-text {
     color: #121212;
 }
 
-/* سلة المشتريات Side Drawer (معدلة ومحدثة لدعم الفتح الكامل) */
+/* سلة المشتريات Side Drawer */
 .cart-drawer {
     position: fixed;
     top: 0;
@@ -167,7 +286,6 @@ h1, h2, h3, .gold-text {
     padding: 20px;
 }
 
-/* دعم كلا الكلاسين لضمان الفتح في كل الحالات */
 .cart-drawer.open,
 .cart-drawer.active {
     left: 0 !important;
@@ -179,6 +297,14 @@ h1, h2, h3, .gold-text {
     align-items: center;
     border-bottom: 1px solid #333;
     padding-bottom: 12px;
+}
+
+.cart-header .close-btn {
+    background: none;
+    border: none;
+    color: #d4af37;
+    font-size: 1.5rem;
+    cursor: pointer;
 }
 
 .cart-items {
@@ -208,24 +334,10 @@ h1, h2, h3, .gold-text {
     border: 1px solid #333;
 }
 
-.qty-btn {
-    background: #333;
-    color: #d4af37;
-    border: 1px solid #444;
-    width: 26px;
-    height: 26px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: 0.2s;
-}
-
-.qty-btn:hover {
-    background: #d4af37;
-    color: #121212;
+.cart-item-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .remove-btn {
@@ -242,6 +354,14 @@ h1, h2, h3, .gold-text {
     border-top: 1px solid #333;
     padding-top: 15px;
     margin-top: auto;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    font-weight: bold;
 }
 
 .whatsapp-submit {
@@ -263,4 +383,90 @@ h1, h2, h3, .gold-text {
 
 .whatsapp-submit:hover {
     background: #1eb954;
+}
+
+/* النافذة المنبثقة للطلب (Modal) */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: #1e293b;
+    border: 1px solid #d4af37;
+    border-radius: 12px;
+    padding: 20px;
+    width: 90%;
+    max-width: 400px;
+    color: #fff;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.modal-header .close-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.form-group {
+    margin-bottom: 12px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #fff;
+}
+
+.btn-submit-order {
+    width: 100%;
+    background: #25d366;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 5px;
+}
+
+/* شعار الإشعار بالتأكيد */
+#success-toast {
+    position: fixed;
+    top: 20px;
+    right: 50%;
+    transform: translateX(50%);
+    background: #10b981;
+    color: #fff;
+    padding: 15px 25px;
+    border-radius: 8px;
+    z-index: 3000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    font-weight: bold;
+    text-align: center;
 }
