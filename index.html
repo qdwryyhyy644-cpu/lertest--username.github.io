@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>عطور الفخامة</title>
     <link rel="stylesheet" href="style.css">
-    <!-- مكتبات Firebase Realtime Database -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
@@ -14,13 +13,11 @@
     <header>
         <h1>عطور الفخامة</h1>
         <div class="delivery-badge">🚚 التوصيل متوفر 58 ولاية</div>
-        <!-- زر فتح السلة المحدث مع حدث onclick الصريح -->
         <button id="open-cart" onclick="toggleCart()" style="position: absolute; left: 15px; top: 20px; background: #d4af37; color: #121212; border: none; padding: 8px 14px; border-radius: 6px; font-weight: bold; cursor: pointer;">
             السلة (<span id="cart-count">0</span>)
         </button>
     </header>
 
-    <!-- شريط التصنيفات -->
     <div class="categories-bar">
         <button class="cat-btn active" onclick="filterCategory('الكل', this)">الكل</button>
         <button class="cat-btn" onclick="filterCategory('عطور صيفية', this)">عطور صيفية</button>
@@ -30,32 +27,62 @@
         <button class="cat-btn" onclick="filterCategory('الأكثر مبيعاً', this)">الأكثر مبيعاً</button>
     </div>
 
-    <!-- معرض المنتجات -->
     <main class="products-grid" id="products-container">
         <p style="text-align:center; grid-column:1/-1; color:#94a3b8; padding:40px;">جاري تحميل العطور...</p>
     </main>
 
-    <!-- سلة المشتريات (Drawer) -->
+    <!-- سلة المشتريات -->
     <div class="cart-drawer" id="cart-drawer">
         <div class="cart-header">
             <h3>سلة المشتريات</h3>
             <button onclick="toggleCart()" style="background:none; border:none; color:#d4af37; font-size:1.5rem; cursor:pointer;">✕</button>
         </div>
         
-        <div class="cart-items" id="cart-items-list">
-            <!-- سيتم إضافة عناصر السلة هنا تلقائياً -->
-        </div>
+        <div class="cart-items" id="cart-items-list"></div>
 
         <div class="cart-footer">
             <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-size:1.1rem; font-weight:bold;">
                 <span>الإجمالي:</span>
                 <span id="cart-total" class="gold-text">0 د.ج</span>
             </div>
-            <button class="whatsapp-submit" onclick="sendOrderWhatsApp()">تأكيد الطلب عبر واتساب</button>
+            <button class="whatsapp-submit" onclick="openCheckoutModal()">تأكيد الطلب 🛒</button>
         </div>
     </div>
 
-    <!-- استدعاء ملف السكريبت الخارجي -->
+    <!-- نافذة إدخال معلومات الزبون (Modal) -->
+    <div id="checkout-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <div style="background:#1e293b; border:1px solid #d4af37; border-radius:12px; padding:20px; width:90%; max-width:400px; color:#fff;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="color:#d4af37; margin:0;">معلومات الشحن</h3>
+                <button onclick="closeCheckoutModal()" style="background:none; border:none; color:#aaa; font-size:1.2rem; cursor:pointer;">✕</button>
+            </div>
+            <form id="order-form" onsubmit="submitOrder(event)">
+                <div style="margin-bottom:10px;">
+                    <label style="display:block; font-size:0.85rem; margin-bottom:5px;">الاسم الكامل:</label>
+                    <input type="text" id="cust-name" required style="width:100%; padding:8px; border-radius:5px; border:1px solid #334155; background:#0f172a; color:#fff;">
+                </div>
+                <div style="margin-bottom:10px;">
+                    <label style="display:block; font-size:0.85rem; margin-bottom:5px;">رقم الهاتف:</label>
+                    <input type="tel" id="cust-phone" required placeholder="06XXXXXXXX" style="width:100%; padding:8px; border-radius:5px; border:1px solid #334155; background:#0f172a; color:#fff;">
+                </div>
+                <div style="margin-bottom:10px;">
+                    <label style="display:block; font-size:0.85rem; margin-bottom:5px;">الولاية:</label>
+                    <input type="text" id="cust-state" required style="width:100%; padding:8px; border-radius:5px; border:1px solid #334155; background:#0f172a; color:#fff;">
+                </div>
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; font-size:0.85rem; margin-bottom:5px;">العنوان أو البلدية:</label>
+                    <input type="text" id="cust-address" required style="width:100%; padding:8px; border-radius:5px; border:1px solid #334155; background:#0f172a; color:#fff;">
+                </div>
+                <button type="submit" style="width:100%; background:#25d366; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer;">تأكيد وتوجيه للواتساب 📲</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- شعار إرسال الطلب بنجاح -->
+    <div id="success-toast" style="display:none; position:fixed; top:20px; right:50%; transform:translateX(50%); background:#10b981; color:#fff; padding:15px 25px; border-radius:8px; z-index:3000; box-shadow:0 4px 12px rgba(0,0,0,0.3); font-weight:bold; text-align:center;">
+        ✅ تم إرسال طلبك بنجاح وسيتم التواصل معك قريباً!
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
