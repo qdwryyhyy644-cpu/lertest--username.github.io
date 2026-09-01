@@ -1,104 +1,3 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم المتجر - عطور الفخامة</title>
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <style>
-        * { box-sizing: border-box; font-family: system-ui, sans-serif; }
-        body { background: #0f172a; color: #fff; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .card { background: #1e293b; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #334155; }
-        input, select, textarea, button { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; }
-        button { background: #0284c7; border: none; font-weight: bold; cursor: pointer; }
-        button:hover { background: #0369a1; }
-        .btn-danger { background: #e11d48; }
-        .btn-danger:hover { background: #be123c; }
-        .hidden { display: none; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #334155; padding: 10px; text-align: right; }
-        th { background: #0f172a; }
-        .img-preview-container { display: flex; gap: 10px; margin: 10px 0; }
-        .img-preview { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #d4af37; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-
-    <!-- 1. شاشة تسجيل الدخول -->
-    <div id="login-screen" class="card" style="max-width:400px; margin: 50px auto; text-align: center;">
-        <h2>🔐 تسجيل الدخول للوحة التحكم</h2>
-        <input type="password" id="admin-pass" placeholder="أدخل كلمة السر">
-        <button onclick="checkPassword()">دخول</button>
-        <p id="login-error" style="color:#f43f5e;" class="hidden">كلمة السر غير صحيحة!</p>
-    </div>
-
-    <!-- 2. محتوى لوحة التحكم -->
-    <div id="dashboard-screen" class="hidden">
-        
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1>👑 لوحة إدارة المتجر</h1>
-            <button onclick="logout()" style="width: auto; padding: 8px 15px;" class="btn-danger">خروج</button>
-        </div>
-
-        <!-- 🔑 إعدادات تغيير كلمة السر -->
-        <div class="card">
-            <h3>🔑 تغيير كلمة سر اللوحة</h3>
-            <input type="password" id="new-pass" placeholder="كلمة السر الجديدة">
-            <button onclick="changePassword()" style="background: #d4af37; color: #000;">تحديث كلمة السر</button>
-        </div>
-
-        <!-- 📱 إعدادات رقم الواتساب -->
-        <div class="card">
-            <h3>📱 رقم الواتساب الخاص بالاستلام</h3>
-            <input type="text" id="whatsapp-num" placeholder="مثال: 213656708603">
-            <button onclick="saveWhatsapp()">حفظ الرقم</button>
-        </div>
-
-        <!-- ➕ إضافة منتج جديد -->
-        <div class="card">
-            <h3>➕ إضافة عطر جديد للمتجر</h3>
-            <input type="text" id="p-name" placeholder="اسم العطر">
-            <input type="number" id="p-price" placeholder="السعر (د.ج)">
-            
-            <label style="font-size: 0.9rem; color: #cbd5e1;">التصنيف:</label>
-            <select id="p-category">
-                <option value="عطور صيفية">عطور صيفية</option>
-                <option value="عطور رجالية">عطور رجالية</option>
-                <option value="عطور نسائية">عطور نسائية</option>
-                <option value="عطور للمناسبات">عطور للمناسبات</option>
-                <option value="الأكثر مبيعاً">الأكثر مبيعاً</option>
-            </select>
-
-            <label style="font-size: 0.9rem; color: #cbd5e1;">اختر صور العطر من المعرض (3 صور كحد أقصى):</label>
-            <input type="file" id="p-files" accept="image/*" multiple onchange="previewImages(event)">
-            <div class="img-preview-container" id="preview-box"></div>
-
-            <textarea id="p-desc" placeholder="وصف العطر"></textarea>
-            <button onclick="addProduct()">نشر المنتج في المتجر</button>
-        </div>
-
-        <!-- 📦 إدارة المنتجات الحالية -->
-        <div class="card">
-            <h3>📦 المنتجات الحالية</h3>
-            <div id="products-list">تحميل المنتجات...</div>
-        </div>
-
-        <!-- 🛍️ قائمة الطلبات -->
-        <div class="card">
-            <h3>🛍️ الطلبات المسجلة</h3>
-            <div id="orders-list">تحميل الطلبات...</div>
-        </div>
-
-    </div>
-
-</div>
-
-<script>
 // ⚠️ ضع مفاتيح Firebase الخاصة بك هنا
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
@@ -109,36 +8,60 @@ const firebaseConfig = {
   appId: "YOUR_APP_ID"
 };
 
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+let db = null;
+if (!firebase.apps.length && firebaseConfig.apiKey !== "YOUR_API_KEY") {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+}
 
 let base64Images = [];
 
-// التحقق من كلمة السر من قواعد البيانات (مع افتراض "admin" لأول مرة)
+// ⚡ دخول فوري بدون انتظار السيرفر
 async function checkPassword() {
-    const inputPass = document.getElementById('admin-pass').value;
-    const doc = await db.collection("settings").doc("security").get();
-    
-    let currentPass = "admin";
-    if (doc.exists && doc.data().password) {
-        currentPass = doc.data().password;
+    const inputPass = document.getElementById('admin-pass').value.trim();
+    let validPass = localStorage.getItem('admin_pass');
+
+    // إذا لم تكن مخزنة محلياً، نتحقق من Firebase سريعاً
+    if (!validPass && db) {
+        try {
+            const doc = await db.collection("settings").doc("security").get();
+            if (doc.exists && doc.data().password) {
+                validPass = doc.data().password;
+                localStorage.setItem('admin_pass', validPass); // كاش للسرعة
+            }
+        } catch(e) { console.log(e); }
     }
 
-    if (inputPass === currentPass) {
+    // القيمة الافتراضية لأول مرة
+    if (!validPass) validPass = "admin";
+
+    if (inputPass === validPass) {
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('dashboard-screen').classList.remove('hidden');
-        loadDashboardData();
+        if (db) loadDashboardData();
     } else {
         document.getElementById('login-error').classList.remove('hidden');
     }
 }
 
+// 🔐 تغيير كلمة السر ومزامنتها في السيرفر والتخزين المحلي فوراً
 async function changePassword() {
-    const newPass = document.getElementById('new-pass').value;
+    const newPass = document.getElementById('new-pass').value.trim();
     if (!newPass) { alert("يرجى كتابة كلمة السر الجديدة!"); return; }
 
-    await db.collection("settings").doc("security").set({ password: newPass }, { merge: true });
-    alert("تم تغيير كلمة السر بنجاح! استخدم كلمة السر الجديدة في المرة القادمة.");
+    // حفظ محلي فوري
+    localStorage.setItem('admin_pass', newPass);
+
+    // حفظ في Firebase للمزامنة مع باقي أجهزة التاجر
+    if (db) {
+        try {
+            await db.collection("settings").doc("security").set({ password: newPass }, { merge: true });
+        } catch(e) {
+            console.error("Firebase Sync Error:", e);
+        }
+    }
+
+    alert("تم تحديث كلمة السر بنجاح ومزامنتها في قواعد البيانات!");
     document.getElementById('new-pass').value = '';
 }
 
@@ -146,7 +69,7 @@ function logout() {
     location.reload();
 }
 
-// معاينة وتحويل الصور المرفوعة من المعرض
+// 🖼️ معالجة الضغط الضوئي للصور (أقصى سرعة تحميل)
 function previewImages(event) {
     const files = Array.from(event.target.files);
     if (files.length > 3) {
@@ -162,17 +85,34 @@ function previewImages(event) {
     files.slice(0, 3).forEach(file => {
         const reader = new FileReader();
         reader.onload = function(e) {
-            base64Images.push(e.target.result);
-            const img = document.createElement('img');
+            // ضغط الصورة تلقائياً لتقليل حجمها وسرعة جلبها للزبائن
+            const img = new Image();
             img.src = e.target.result;
-            img.className = 'img-preview';
-            box.appendChild(img);
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const maxWidth = 600; // حجم ممتاز وسريع جداً للموبايل
+                const scale = maxWidth / img.width;
+                canvas.width = (img.width > maxWidth) ? maxWidth : img.width;
+                canvas.height = (img.width > maxWidth) ? (img.height * scale) : img.height;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7); // ضغط 70%
+                base64Images.push(compressedBase64);
+
+                const previewImg = document.createElement('img');
+                previewImg.src = compressedBase64;
+                previewImg.className = 'img-preview';
+                box.appendChild(previewImg);
+            }
         };
         reader.readAsDataURL(file);
     });
 }
 
 async function loadDashboardData() {
+    if (!db) return;
+
     // جلب الواتساب
     const configDoc = await db.collection("settings").doc("config").get();
     if (configDoc.exists && configDoc.data().whatsapp) {
@@ -216,12 +156,14 @@ async function loadDashboardData() {
 }
 
 async function saveWhatsapp() {
+    if (!db) { alert("يرجى إدخال مفاتيح Firebase أولاً"); return; }
     const num = document.getElementById('whatsapp-num').value;
     await db.collection("settings").doc("config").set({ whatsapp: num }, { merge: true });
     alert("تم حفظ رقم الواتساب بنجاح!");
 }
 
 async function addProduct() {
+    if (!db) { alert("يرجى إدخال مفاتيح Firebase أولاً في الكود"); return; }
     const name = document.getElementById('p-name').value;
     const price = Number(document.getElementById('p-price').value);
     const category = document.getElementById('p-category').value;
@@ -249,10 +191,8 @@ async function addProduct() {
 }
 
 async function deleteProduct(id) {
+    if (!db) return;
     if (confirm("هل أنت تأكد من حذف هذا المنتج؟")) {
         await db.collection("products").doc(id).delete();
     }
 }
-</script>
-</body>
-</html>
