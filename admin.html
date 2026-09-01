@@ -99,18 +99,18 @@
 </div>
 
 <script>
-// ⚠️ ضع مفاتيح Firebase الخاصة بك هنا
+// 🔑 مفاتيح Firebase الخاصة بمشروعك (otour-elfakhama-cf76d)
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyC3Y1n6gd-XtJdv-7UKOesb9-Lgc2lII0c",
+  authDomain: "otour-elfakhama-cf76d.firebaseapp.com",
+  projectId: "otour-elfakhama-cf76d",
+  storageBucket: "otour-elfakhama-cf76d.firebasestorage.app",
+  messagingSenderId: "843441752510",
+  appId: "1:843441752510:web:94b201def5ea9510c491ef"
 };
 
 let db = null;
-if (!firebase.apps.length && firebaseConfig.apiKey !== "YOUR_API_KEY") {
+if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
 }
@@ -122,7 +122,6 @@ async function checkPassword() {
     const inputPass = document.getElementById('admin-pass').value.trim();
     let validPass = localStorage.getItem('admin_pass');
 
-    // إذا لم تكن مخزنة محلياً، نتحقق من Firebase سريعاً
     if (!validPass && db) {
         try {
             const doc = await db.collection("settings").doc("security").get();
@@ -144,7 +143,7 @@ async function checkPassword() {
     }
 }
 
-// 🔐 تغيير كلمة السر ومزامنتها في السيرفر والتخزين المحلي فوراً
+// 🔐 تغيير كلمة السر ومزامنتها في السيرفر والتخزين المحلي
 async function changePassword() {
     const newPass = document.getElementById('new-pass').value.trim();
     if (!newPass) { alert("يرجى كتابة كلمة السر الجديدة!"); return; }
@@ -167,7 +166,7 @@ function logout() {
     location.reload();
 }
 
-// 🖼️ معالجة الضغط الضوئي للصور
+// 🖼️ ضغط الصور تلقائياً لسرعة التحميل
 function previewImages(event) {
     const files = Array.from(event.target.files);
     if (files.length > 3) {
@@ -250,14 +249,14 @@ async function loadDashboardData() {
 }
 
 async function saveWhatsapp() {
-    if (!db) { alert("يرجى إدخال مفاتيح Firebase أولاً"); return; }
+    if (!db) return;
     const num = document.getElementById('whatsapp-num').value;
     await db.collection("settings").doc("config").set({ whatsapp: num }, { merge: true });
     alert("تم حفظ رقم الواتساب بنجاح!");
 }
 
 async function addProduct() {
-    if (!db) { alert("يرجى إدخال مفاتيح Firebase أولاً في الكود"); return; }
+    if (!db) return;
     const name = document.getElementById('p-name').value;
     const price = Number(document.getElementById('p-price').value);
     const category = document.getElementById('p-category').value;
