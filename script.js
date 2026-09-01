@@ -1,36 +1,53 @@
-// ⚠️ ضع إعدادات Firebase الخاصة بك
+// إعدادات Firebase الخاصة بمشروعك (محدثة برابط Realtime Database)
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyC3Y1n6gd-XtJdv-7UKOesb9-Lgc2lII0c",
+  authDomain: "otour-elfakhama-cf76d.firebaseapp.com",
+  projectId: "otour-elfakhama-cf76d",
+  storageBucket: "otour-elfakhama-cf76d.firebasestorage.app",
+  messagingSenderId: "843441752510",
+  appId: "1:843441752510:web:94b201def5ea9510c491ef",
+  databaseURL: "https://otour-elfakhama-cf76d-default-rtdb.firebaseio.com"
 };
 
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const db = firebase.database();
 
 let allProducts = [];
 let cart = [];
 let targetCategory = 'الكل';
+let whatsappNumber = "213656708603"; // رقم الواتساب الافتراضي
 
-// جلب المنتجات الحقيقية فقط بدون أي منتجات وهمية
-async function fetchProducts() {
+// 1. جلب المنتجات ورقم الواتساب تلقائياً من Realtime Database
+function fetchProducts() {
     const container = document.getElementById('products-container');
-    container.innerHTML = '<p style="text-align:center; grid-column:1/-1;">جاري تحميل العطور...</p>';
+    if (container) {
+        container.innerHTML = '<p style="text-align:center; grid-column:1/-1; color:#94a3b8; padding:40px;">جاري تحميل العطور...</p>';
+    }
     
-    db.collection("products").onSnapshot(snapshot => {
+    // جلب رقم الواتساب من الإعدادات
+    db.ref("settings/config/whatsapp").on('value', snap => {
+        if (snap.exists() && snap.val()) {
+            whatsappNumber = snap.val();
+        }
+    });
+
+    // الاستماع المباشر للتغيرات في المنتجات
+    db.ref("products").on('value', snapshot => {
         allProducts = [];
-        snapshot.forEach(doc => {
-            allProducts.push({ id: doc.id, ...doc.data() });
-        });
+        if (snapshot.exists()) {
+            snapshot.forEach(doc => {
+                allProducts.push({ id: doc.key, ...doc.val() });
+            });
+        }
         renderProducts();
     });
 }
 
+// 2. عرض المنتجات في الصفحة
 function renderProducts() {
     const container = document.getElementById('products-container');
+    if (!container) return;
+    
     container.innerHTML = '';
 
     const filtered = targetCategory === 'الكل' 
@@ -38,7 +55,7 @@ function renderProducts() {
         : allProducts.filter(p => p.category === targetCategory);
 
     if (filtered.length === 0) {
-        container.innerHTML = '<p style="text-align:center; grid-column:1/-1; color:#888;">لا توجد عطور في هذا التصنيف حالياً.</p>';
+        container.innerHTML = '<p style="text-align:center; grid-column:1/-1; color:#888; padding:40px;">لا توجد عطور في هذا التصنيف حالياً.</p>';
         return;
     }
 
@@ -65,16 +82,19 @@ function renderProducts() {
     });
 }
 
+// 3. تصفية التصنيفات
 function filterCategory(cat, btn) {
     targetCategory = cat;
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    if (btn) btn.classList.add('active');
     renderProducts();
 }
 
-/* إدارة السلة والكميات */
+// 4. إدارة السلة والكميات
 function addToCart(id) {
     const prod = allProducts.find(p => p.id === id);
+    if (!prod) return;
+
     const item = cart.find(i => i.id === id);
 
     if (item) {
@@ -82,7 +102,15 @@ function addToCart(id) {
     } else {
         cart.push({ ...prod, qty: 1 });
     }
+    
     updateCartUI();
+    
+    // فتح السلة تلقائياً عند إضافة منتج
+    const drawer = document.getElementById('cart-drawer');
+    if (drawer) {
+        drawer.classList.add('active');
+        drawer.classList.add('open');
+    }
 }
 
 function changeQty(id, delta) {
@@ -101,8 +129,11 @@ function removeFromCart(id) {
     updateCartUI();
 }
 
+// 5. تحديث واجهة السلة
 function updateCartUI() {
     const list = document.getElementById('cart-items-list');
+    if (!list) return;
+
     list.innerHTML = '';
     let total = 0;
     let count = 0;
@@ -116,7 +147,7 @@ function updateCartUI() {
         el.innerHTML = `
             <div>
                 <div style="font-weight:bold;">${item.name}</div>
-                <div class="gold-text">${item.price} د.ج</div>
+                <div class="gold-text">${item.price} د.ج × ${item.qty}</div>
             </div>
             <div style="display:flex; align-items:center; gap:5px;">
                 <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
@@ -128,25 +159,54 @@ function updateCartUI() {
         list.appendChild(el);
     });
 
-    document.getElementById('cart-total').innerText = total + ' د.ج';
-    document.getElementById('cart-count').innerText = count;
+    const totalEl = document.getElementById('cart-total');
+    const countEl = document.getElementById('cart-count');
+    
+    if (totalEl) totalEl.innerText = total + ' د.ج';
+    if (countEl) countEl.innerText = count;
 }
 
+// 6. فتح وإغلاق السلة
 function toggleCart() {
-    document.getElementById('cart-drawer').classList.toggle('open');
+    const drawer = document.getElementById('cart-drawer');
+    if (drawer) {
+        drawer.classList.toggle('active');
+        drawer.classList.toggle('open');
+    }
 }
 
+// 7. إرسال الطلب عبر واتساب وتسجيله في قاعدة البيانات
 async function sendOrderWhatsApp() {
-    if (cart.length === 0) { alert("السلة فارغة!"); return; }
+    if (cart.length === 0) { 
+        alert("السلة فارغة!"); 
+        return; 
+    }
 
-    const configDoc = await db.collection("settings").doc("config").get();
-    const phone = configDoc.exists ? configDoc.data().whatsapp : "";
+    let total = 0;
+    let text = "مرحباً، أريد تأكيد طلب العطور التالية من المتجر:\n\n";
+    
+    cart.forEach(i => {
+        const itemTotal = i.price * i.qty;
+        total += itemTotal;
+        text += `- ${i.name} (الكمية: ${i.qty}) -> بسعر: ${itemTotal} د.ج\n`;
+    });
+    
+    text += `\n💰 الإجمالي: ${total} د.ج`;
 
-    let text = "طلب جديد من المتجر:\n";
-    cart.forEach(i => text += `- ${i.name} (الكمية: ${i.qty}) بسعر: ${i.price * i.qty} د.ج\n`);
-    text += `الإجمالي: ${document.getElementById('cart-total').innerText}`;
+    // تسجيل الطلب في Firebase Realtime Database
+    try {
+        await db.ref("orders").push({
+            items: cart,
+            total: total,
+            createdAt: Date.now()
+        });
+    } catch (e) {
+        console.error("Error saving order:", e);
+    }
 
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+    // فتح رابط الواتساب
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`, '_blank');
 }
 
+// بدء التشغيل
 fetchProducts();
