@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>عطور الفخامة</title>
     <link rel="stylesheet" href="style.css">
-    <!-- تم تحديث المكتبة إلى Realtime Database لتتوافق مع قواعد البيانات لديك -->
+    <!-- مكتبات Firebase Realtime Database -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
@@ -13,11 +13,14 @@
 
     <header>
         <h1>عطور الفخامة</h1>
-        <div class="delivery-badge">🚚 التوصيل متوفر 69 ولاية</div>
-        <button id="open-cart" onclick="toggleCart()" style="position: absolute; left: 15px; top: 20px; background: #d4af37; border: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; cursor: pointer;">السلة (<span id="cart-count">0</span>)</button>
+        <div class="delivery-badge">🚚 التوصيل متوفر 58 ولاية</div>
+        <!-- زر فتح السلة المحدث مع حدث onclick الصريح -->
+        <button id="open-cart" onclick="toggleCart()" style="position: absolute; left: 15px; top: 20px; background: #d4af37; color: #121212; border: none; padding: 8px 14px; border-radius: 6px; font-weight: bold; cursor: pointer;">
+            السلة (<span id="cart-count">0</span>)
+        </button>
     </header>
 
-    <!-- شريط علوي متقطع للتصنيفات -->
+    <!-- شريط التصنيفات -->
     <div class="categories-bar">
         <button class="cat-btn active" onclick="filterCategory('الكل', this)">الكل</button>
         <button class="cat-btn" onclick="filterCategory('عطور صيفية', this)">عطور صيفية</button>
@@ -29,20 +32,22 @@
 
     <!-- معرض المنتجات -->
     <main class="products-grid" id="products-container">
-        <div style="text-align: center; color: #94a3b8; grid-column: 1 / -1; padding: 40px;">جاري تحميل العطور...</div>
+        <p style="text-align:center; grid-column:1/-1; color:#94a3b8; padding:40px;">جاري تحميل العطور...</p>
     </main>
 
-    <!-- سلة المشتريات -->
+    <!-- سلة المشتريات (Drawer) -->
     <div class="cart-drawer" id="cart-drawer">
         <div class="cart-header">
             <h3>سلة المشتريات</h3>
-            <button onclick="toggleCart()" style="background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer;">✕</button>
+            <button onclick="toggleCart()" style="background:none; border:none; color:#d4af37; font-size:1.5rem; cursor:pointer;">✕</button>
         </div>
+        
         <div class="cart-items" id="cart-items-list">
-            <!-- عناصر السلة -->
+            <!-- سيتم إضافة عناصر السلة هنا تلقائياً -->
         </div>
+
         <div class="cart-footer">
-            <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-size:1.1rem;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-size:1.1rem; font-weight:bold;">
                 <span>الإجمالي:</span>
                 <span id="cart-total" class="gold-text">0 د.ج</span>
             </div>
@@ -50,76 +55,7 @@
         </div>
     </div>
 
-    <!-- كود الإتصال بقاعدة البيانات وجلب المنتجات -->
-    <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyC3Y1n6gd-XtJdv-7UKOesb9-Lgc2lII0c",
-      authDomain: "otour-elfakhama-cf76d.firebaseapp.com",
-      projectId: "otour-elfakhama-cf76d",
-      storageBucket: "otour-elfakhama-cf76d.firebasestorage.app",
-      messagingSenderId: "843441752510",
-      appId: "1:843441752510:web:94b201def5ea9510c491ef",
-      databaseURL: "https://otour-elfakhama-cf76d-default-rtdb.firebaseio.com"
-    };
-
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    const db = firebase.database();
-
-    let allProducts = [];
-
-    // جلب المنتجات تلقائياً من Realtime Database
-    db.ref("products").on('value', snapshot => {
-        allProducts = [];
-        if (snapshot.exists()) {
-            snapshot.forEach(child => {
-                allProducts.push({ id: child.key, ...child.val() });
-            });
-        }
-        renderProducts(allProducts);
-    });
-
-    function renderProducts(products) {
-        const container = document.getElementById('products-container');
-        if (!container) return;
-
-        if (products.length === 0) {
-            container.innerHTML = '<div style="text-align: center; color: #94a3b8; grid-column: 1 / -1; padding: 40px;">لا تتوفر عطور حالياً.</div>';
-            return;
-        }
-
-        let html = '';
-        products.forEach(p => {
-            const img = (p.images && p.images.length > 0) ? p.images[0] : 'https://via.placeholder.com/300?text=No+Image';
-            
-            html += `
-            <div class="product-card" style="background:#1e293b; border-radius:10px; padding:15px; border:1px solid #334155; display:flex; flex-direction:column; justify-content:space-between;">
-                <img src="${img}" alt="${p.name}" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
-                <h3 style="margin-bottom:5px; font-size:1.1rem; color:#fff;">${p.name}</h3>
-                <p style="color:#cbd5e1; font-size:0.85rem; margin-bottom:10px;">${p.desc || ''}</p>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:auto;">
-                    <span class="gold-text" style="color:#d4af37; font-weight:bold; font-size:1.1rem;">${p.price} د.ج</span>
-                    <button onclick="addToCart('${p.name}', ${p.price})" style="background:#0284c7; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">إضافة للسلة 🛒</button>
-                </div>
-            </div>`;
-        });
-        container.innerHTML = html;
-    }
-
-    function filterCategory(cat, btn) {
-        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-        if(btn) btn.classList.add('active');
-
-        if (cat === 'الكل') {
-            renderProducts(allProducts);
-        } else {
-            const filtered = allProducts.filter(p => p.category === cat);
-            renderProducts(filtered);
-        }
-    }
-    </script>
-
+    <!-- استدعاء ملف السكريبت الخارجي -->
     <script src="script.js"></script>
 </body>
 </html>
