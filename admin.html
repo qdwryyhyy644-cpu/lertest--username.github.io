@@ -10,19 +10,22 @@
     <style>
         * { box-sizing: border-box; font-family: system-ui, sans-serif; }
         body { background: #0f172a; color: #fff; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; }
+        .container { max-width: 1000px; margin: 0 auto; }
         .card { background: #1e293b; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #334155; }
         input, select, textarea, button { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; }
         button { background: #0284c7; border: none; font-weight: bold; cursor: pointer; }
         button:hover { background: #0369a1; }
         .btn-danger { background: #e11d48; }
         .btn-danger:hover { background: #be123c; }
+        .btn-copy { background: #334155; color: #38bdf8; border: 1px solid #0284c7; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; margin-right: 5px; width: auto; display: inline-block; }
+        .btn-copy:hover { background: #0284c7; color: #fff; }
         .hidden { display: none; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #334155; padding: 10px; text-align: right; }
-        th { background: #0f172a; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        th, td { border: 1px solid #334155; padding: 10px; text-align: right; vertical-align: middle; }
+        th { background: #0f172a; color: #d4af37; }
         .img-preview-container { display: flex; gap: 10px; margin: 10px 0; }
         .img-preview { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #d4af37; }
+        .items-list-text { margin: 0; padding-right: 15px; font-size: 0.85rem; color: #cbd5e1; }
     </style>
 </head>
 <body>
@@ -88,9 +91,12 @@
             <div id="products-list">تحميل المنتجات...</div>
         </div>
 
-        <!-- 🛍️ قائمة الطلبات -->
+        <!-- 🛍️ قائمة الطلبات المسجلة -->
         <div class="card">
-            <h3>🛍️ الطلبات المسجلة</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin:0;">🛍️ الطلبات المسجلة</h3>
+                <button onclick="deleteAllOrders()" class="btn-danger" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">🗑️ حذف جميع الطلبات</button>
+            </div>
             <div id="orders-list">تحميل الطلبات...</div>
         </div>
 
@@ -204,6 +210,14 @@ function previewImages(event) {
     });
 }
 
+function copyPhone(phone) {
+    navigator.clipboard.writeText(phone).then(() => {
+        alert("تم نسخ الرقم: " + phone);
+    }).catch(err => {
+        console.error("فشل النسخ: ", err);
+    });
+}
+
 function loadDashboardData() {
     if (!db) return;
 
@@ -225,7 +239,7 @@ function loadDashboardData() {
                     <td>${p.name}</td>
                     <td><small>${p.category || 'عام'}</small></td>
                     <td>${p.price} د.ج</td>
-                    <td><button class="btn-danger" onclick="deleteProduct('${key}')">حذف</button></td>
+                    <td><button class="btn-danger" style="padding:5px 10px; width:auto;" onclick="deleteProduct('${key}')">حذف</button></td>
                 </tr>`;
             });
         }
@@ -233,19 +247,41 @@ function loadDashboardData() {
         document.getElementById('products-list').innerHTML = html;
     });
 
+    // جلب وعرض الطلبات المسجلة
     db.ref("orders").on('value', snapshot => {
-        let html = '<table><tr><th>الزبون</th><th>الهاتف</th><th>المجموع</th><th>التاريخ</th></tr>';
+        let html = '<table><tr><th>الزبون</th><th>الهاتف</th><th>الولاية والعنوان</th><th>تفاصيل الطلبيات</th><th>المجموع</th><th>التاريخ</th><th>إجراء</th></tr>';
         if (snapshot.exists()) {
             snapshot.forEach(child => {
                 const o = child.val();
-                const date = o.createdAt ? new Date(o.createdAt).toLocaleString('ar-DZ') : 'الآن';
+                const key = child.key;
+                const date = o.createdAt ? (typeof o.createdAt === 'number' ? new Date(o.createdAt).toLocaleString('ar-DZ') : o.createdAt) : 'الآن';
+                const phone = o.phone || '-';
+                
+                let itemsHtml = '<ul class="items-list-text">';
+                if (o.items && Array.isArray(o.items)) {
+                    o.items.forEach(it => {
+                        itemsHtml += `<li>${it.name} (الكمية: ${it.qty})</li>`;
+                    });
+                } else {
+                    itemsHtml += '<li>غير موضح</li>';
+                }
+                itemsHtml += '</ul>';
+
                 html += `<tr>
-                    <td>${o.customerName || 'زبون'}</td>
-                    <td>${o.phone || '-'}</td>
-                    <td>${o.total} د.ج</td>
+                    <td><b>${o.customerName || 'زبون'}</b></td>
+                    <td>
+                        <span>${phone}</span><br>
+                        ${phone !== '-' ? `<button class="btn-copy" onclick="copyPhone('${phone}')">📋 نسخ</button>` : ''}
+                    </td>
+                    <td><small>${o.state || ''} - ${o.address || ''}</small></td>
+                    <td>${itemsHtml}</td>
+                    <td style="color:#d4af37; font-weight:bold;">${o.total} د.ج</td>
                     <td><small>${date}</small></td>
+                    <td><button class="btn-danger" style="padding:5px 10px; width:auto;" onclick="deleteOrder('${key}')">حذف</button></td>
                 </tr>`;
             });
+        } else {
+            html += '<tr><td colspan="7" style="text-align:center; color:#94a3b8;">لا توجد طلبات مسجلة حالياً</td></tr>';
         }
         html += '</table>';
         document.getElementById('orders-list').innerHTML = html;
@@ -291,6 +327,24 @@ async function deleteProduct(key) {
     if (!db) return;
     if (confirm("هل أنت تأكد من حذف هذا المنتج؟")) {
         await db.ref("products/" + key).remove();
+    }
+}
+
+// دالة حذف طلب واحد
+async function deleteOrder(key) {
+    if (!db) return;
+    if (confirm("هل أنت تأكد من حذف هذا الطلب؟")) {
+        await db.ref("orders/" + key).remove();
+        alert("تم حذف الطلب بنجاح!");
+    }
+}
+
+// دالة حذف جميع الطلبات
+async function deleteAllOrders() {
+    if (!db) return;
+    if (confirm("⚠️ تحذير: هل أنت تأكد من حذف جميع الطلبات المسجلة نهائياً؟")) {
+        await db.ref("orders").remove();
+        alert("تم مسح كافة الطلبات بنجاح!");
     }
 }
 </script>
