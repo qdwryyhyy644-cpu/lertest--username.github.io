@@ -9,23 +9,79 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         * { box-sizing: border-box; font-family: system-ui, sans-serif; }
-        body { background: #0f172a; color: #fff; margin: 0; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        .card { background: #1e293b; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #334155; }
-        input, select, textarea, button { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; }
+        html, body { 
+            background: #0f172a; 
+            color: #fff; 
+            margin: 0; 
+            padding: 10px; 
+            width: 100%; 
+            overflow-x: hidden; /* يمنع التمدد الأفقي للشاشة */
+        }
+        .container { max-width: 1000px; margin: 0 auto; width: 100%; }
+        .card { 
+            background: #1e293b; 
+            padding: 15px; 
+            border-radius: 10px; 
+            margin-bottom: 20px; 
+            border: 1px solid #334155; 
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden; 
+        }
+        input, select, textarea, button { 
+            width: 100%; 
+            padding: 10px; 
+            margin: 8px 0; 
+            border-radius: 6px; 
+            border: 1px solid #475569; 
+            background: #0f172a; 
+            color: #fff; 
+        }
         button { background: #0284c7; border: none; font-weight: bold; cursor: pointer; }
         button:hover { background: #0369a1; }
         .btn-danger { background: #e11d48; }
         .btn-danger:hover { background: #be123c; }
-        .btn-copy { background: #334155; color: #38bdf8; border: 1px solid #0284c7; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; margin-right: 5px; width: auto; display: inline-block; }
+        .btn-copy { 
+            background: #334155; 
+            color: #38bdf8; 
+            border: 1px solid #0284c7; 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-size: 0.8rem; 
+            cursor: pointer; 
+            margin-top: 5px; 
+            width: auto; 
+            display: inline-block; 
+        }
         .btn-copy:hover { background: #0284c7; color: #fff; }
         .hidden { display: none; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
-        th, td { border: 1px solid #334155; padding: 10px; text-align: right; vertical-align: middle; }
-        th { background: #0f172a; color: #d4af37; }
-        .img-preview-container { display: flex; gap: 10px; margin: 10px 0; }
+
+        /* جعل الجداول قابلة للتمرير داخل إطارها فقط دون تخريب الشاشة */
+        .table-responsive { 
+            width: 100%; 
+            overflow-x: auto; 
+            -webkit-overflow-scrolling: touch; 
+            margin-top: 10px;
+            border-radius: 6px;
+        }
+        table { 
+            width: 100%; 
+            min-width: 650px; /* يحافظ على تنسيق جدول الطلبات دون انكماش */
+            border-collapse: collapse; 
+            font-size: 0.85rem; 
+        }
+        th, td { 
+            border: 1px solid #334155; 
+            padding: 10px; 
+            text-align: right; 
+            vertical-align: middle; 
+            word-break: break-word; 
+        }
+        th { background: #0f172a; color: #d4af37; white-space: nowrap; }
+
+        .img-preview-container { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
         .img-preview { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #d4af37; }
-        .items-list-text { margin: 0; padding-right: 15px; font-size: 0.85rem; color: #cbd5e1; }
+        .items-list-text { margin: 0; padding-right: 15px; font-size: 0.8rem; color: #cbd5e1; }
     </style>
 </head>
 <body>
@@ -43,8 +99,8 @@
     <!-- 2. محتوى لوحة التحكم -->
     <div id="dashboard-screen" class="hidden">
         
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1>👑 لوحة إدارة المتجر</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="margin: 0; font-size: 1.3rem;">👑 لوحة إدارة المتجر</h2>
             <button onclick="logout()" style="width: auto; padding: 8px 15px;" class="btn-danger">خروج</button>
         </div>
 
@@ -88,16 +144,16 @@
         <!-- 📦 إدارة المنتجات الحالية -->
         <div class="card">
             <h3>📦 المنتجات الحالية</h3>
-            <div id="products-list">تحميل المنتجات...</div>
+            <div class="table-responsive" id="products-list">تحميل المنتجات...</div>
         </div>
 
         <!-- 🛍️ قائمة الطلبات المسجلة -->
         <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
                 <h3 style="margin:0;">🛍️ الطلبات المسجلة</h3>
                 <button onclick="deleteAllOrders()" class="btn-danger" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">🗑️ حذف جميع الطلبات</button>
             </div>
-            <div id="orders-list">تحميل الطلبات...</div>
+            <div class="table-responsive" id="orders-list">تحميل الطلبات...</div>
         </div>
 
     </div>
