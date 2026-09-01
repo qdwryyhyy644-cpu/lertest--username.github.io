@@ -12,7 +12,7 @@
         body { background: #0f172a; color: #fff; margin: 0; padding: 20px; }
         .container { max-width: 900px; margin: 0 auto; }
         .card { background: #1e293b; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #334155; }
-        input, textarea, button { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; }
+        input, select, textarea, button { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; }
         button { background: #0284c7; border: none; font-weight: bold; cursor: pointer; }
         button:hover { background: #0369a1; }
         .btn-danger { background: #e11d48; }
@@ -21,6 +21,8 @@
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid #334155; padding: 10px; text-align: right; }
         th { background: #0f172a; }
+        .img-preview-container { display: flex; gap: 10px; margin: 10px 0; }
+        .img-preview { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #d4af37; }
     </style>
 </head>
 <body>
@@ -35,7 +37,7 @@
         <p id="login-error" style="color:#f43f5e;" class="hidden">كلمة السر غير صحيحة!</p>
     </div>
 
-    <!-- 2. محتوى لوحة التحكم (مخفي افتراضياً) -->
+    <!-- 2. محتوى لوحة التحكم -->
     <div id="dashboard-screen" class="hidden">
         
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -43,30 +45,50 @@
             <button onclick="logout()" style="width: auto; padding: 8px 15px;" class="btn-danger">خروج</button>
         </div>
 
-        <!-- إعدادات رقم الواتساب -->
+        <!-- 🔑 إعدادات تغيير كلمة السر -->
+        <div class="card">
+            <h3>🔑 تغيير كلمة سر اللوحة</h3>
+            <input type="password" id="new-pass" placeholder="كلمة السر الجديدة">
+            <button onclick="changePassword()" style="background: #d4af37; color: #000;">تحديث كلمة السر</button>
+        </div>
+
+        <!-- 📱 إعدادات رقم الواتساب -->
         <div class="card">
             <h3>📱 رقم الواتساب الخاص بالاستلام</h3>
             <input type="text" id="whatsapp-num" placeholder="مثال: 213656708603">
             <button onclick="saveWhatsapp()">حفظ الرقم</button>
         </div>
 
-        <!-- إضافة منتج جديد -->
+        <!-- ➕ إضافة منتج جديد -->
         <div class="card">
             <h3>➕ إضافة عطر جديد للمتجر</h3>
             <input type="text" id="p-name" placeholder="اسم العطر">
             <input type="number" id="p-price" placeholder="السعر (د.ج)">
-            <input type="text" id="p-img" placeholder="رابط صورة العطر (URL)">
+            
+            <label style="font-size: 0.9rem; color: #cbd5e1;">التصنيف:</label>
+            <select id="p-category">
+                <option value="عطور صيفية">عطور صيفية</option>
+                <option value="عطور رجالية">عطور رجالية</option>
+                <option value="عطور نسائية">عطور نسائية</option>
+                <option value="عطور للمناسبات">عطور للمناسبات</option>
+                <option value="الأكثر مبيعاً">الأكثر مبيعاً</option>
+            </select>
+
+            <label style="font-size: 0.9rem; color: #cbd5e1;">اختر صور العطر من المعرض (3 صور كحد أقصى):</label>
+            <input type="file" id="p-files" accept="image/*" multiple onchange="previewImages(event)">
+            <div class="img-preview-container" id="preview-box"></div>
+
             <textarea id="p-desc" placeholder="وصف العطر"></textarea>
             <button onclick="addProduct()">نشر المنتج في المتجر</button>
         </div>
 
-        <!-- إدارة المنتجات الحالية -->
+        <!-- 📦 إدارة المنتجات الحالية -->
         <div class="card">
             <h3>📦 المنتجات الحالية</h3>
             <div id="products-list">تحميل المنتجات...</div>
         </div>
 
-        <!-- قائمة الطلبات القادمة من الزبائن -->
+        <!-- 🛍️ قائمة الطلبات -->
         <div class="card">
             <h3>🛍️ الطلبات المسجلة</h3>
             <div id="orders-list">تحميل الطلبات...</div>
@@ -77,7 +99,7 @@
 </div>
 
 <script>
-// ⚠️ ضع مفاتيح Firebase الخاصة بك هنا (نفس المفاتيح الموجودة في script.js)
+// ⚠️ ضع مفاتيح Firebase الخاصة بك هنا
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "YOUR_AUTH_DOMAIN",
@@ -90,12 +112,19 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// 🔑 كلمة السر الخاصة بك للدخول للوحة (غيرها لما تريد)
-const ADMIN_PASSWORD = "admin";
+let base64Images = [];
 
-function checkPassword() {
-    const pass = document.getElementById('admin-pass').value;
-    if (pass === ADMIN_PASSWORD) {
+// التحقق من كلمة السر من قواعد البيانات (مع افتراض "admin" لأول مرة)
+async function checkPassword() {
+    const inputPass = document.getElementById('admin-pass').value;
+    const doc = await db.collection("settings").doc("security").get();
+    
+    let currentPass = "admin";
+    if (doc.exists && doc.data().password) {
+        currentPass = doc.data().password;
+    }
+
+    if (inputPass === currentPass) {
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('dashboard-screen').classList.remove('hidden');
         loadDashboardData();
@@ -104,12 +133,47 @@ function checkPassword() {
     }
 }
 
+async function changePassword() {
+    const newPass = document.getElementById('new-pass').value;
+    if (!newPass) { alert("يرجى كتابة كلمة السر الجديدة!"); return; }
+
+    await db.collection("settings").doc("security").set({ password: newPass }, { merge: true });
+    alert("تم تغيير كلمة السر بنجاح! استخدم كلمة السر الجديدة في المرة القادمة.");
+    document.getElementById('new-pass').value = '';
+}
+
 function logout() {
     location.reload();
 }
 
+// معاينة وتحويل الصور المرفوعة من المعرض
+function previewImages(event) {
+    const files = Array.from(event.target.files);
+    if (files.length > 3) {
+        alert("يمكنك اختيار 3 صور كحد أقصى فقط!");
+        event.target.value = "";
+        return;
+    }
+
+    base64Images = [];
+    const box = document.getElementById('preview-box');
+    box.innerHTML = '';
+
+    files.slice(0, 3).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            base64Images.push(e.target.result);
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.className = 'img-preview';
+            box.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
 async function loadDashboardData() {
-    // جلب رقم الواتساب
+    // جلب الواتساب
     const configDoc = await db.collection("settings").doc("config").get();
     if (configDoc.exists && configDoc.data().whatsapp) {
         document.getElementById('whatsapp-num').value = configDoc.data().whatsapp;
@@ -117,13 +181,14 @@ async function loadDashboardData() {
 
     // جلب المنتجات
     db.collection("products").onSnapshot(snapshot => {
-        let html = '<table><tr><th>الصورة</th><th>الاسم</th><th>السعر</th><th>إجراء</th></tr>';
+        let html = '<table><tr><th>الصورة</th><th>الاسم</th><th>التصنيف</th><th>السعر</th><th>إجراء</th></tr>';
         snapshot.forEach(doc => {
             const p = doc.data();
             const img = (p.images && p.images.length > 0) ? p.images[0] : '';
             html += `<tr>
-                <td><img src="${img}" width="50" height="50" style="object-fit:cover; border-radius:4px;"></td>
+                <td><img src="${img}" width="40" height="40" style="object-fit:cover; border-radius:4px;"></td>
                 <td>${p.name}</td>
+                <td><small>${p.category || 'عام'}</small></td>
                 <td>${p.price} د.ج</td>
                 <td><button class="btn-danger" onclick="deleteProduct('${doc.id}')">حذف</button></td>
             </tr>`;
@@ -139,8 +204,8 @@ async function loadDashboardData() {
             const o = doc.data();
             const date = o.createdAt ? new Date(o.createdAt.toDate()).toLocaleString('ar-DZ') : 'الآن';
             html += `<tr>
-                <td>${o.customerName}</td>
-                <td>${o.phone}</td>
+                <td>${o.customerName || 'زبون'}</td>
+                <td>${o.phone || '-'}</td>
                 <td>${o.total} د.ج</td>
                 <td><small>${date}</small></td>
             </tr>`;
@@ -153,30 +218,34 @@ async function loadDashboardData() {
 async function saveWhatsapp() {
     const num = document.getElementById('whatsapp-num').value;
     await db.collection("settings").doc("config").set({ whatsapp: num }, { merge: true });
-    alert("تم تحديث رقم الواتساب بنجاح!");
+    alert("تم حفظ رقم الواتساب بنجاح!");
 }
 
 async function addProduct() {
     const name = document.getElementById('p-name').value;
     const price = Number(document.getElementById('p-price').value);
-    const img = document.getElementById('p-img').value;
+    const category = document.getElementById('p-category').value;
     const desc = document.getElementById('p-desc').value;
 
     if (!name || !price) { alert("يرجى ملء الاسم والسعر!"); return; }
+    if (base64Images.length === 0) { alert("يرجى اختيار صورة واحدة على الأقل من المعرض!"); return; }
 
     await db.collection("products").add({
         name: name,
         price: price,
-        images: [img],
+        category: category,
+        images: base64Images,
         desc: desc,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
     document.getElementById('p-name').value = '';
     document.getElementById('p-price').value = '';
-    document.getElementById('p-img').value = '';
     document.getElementById('p-desc').value = '';
-    alert("تمت إضافة المنتج للمتجر!");
+    document.getElementById('p-files').value = '';
+    document.getElementById('preview-box').innerHTML = '';
+    base64Images = [];
+    alert("تمت إضافة العطر بنجاح للمتجر!");
 }
 
 async function deleteProduct(id) {
