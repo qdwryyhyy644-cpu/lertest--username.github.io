@@ -53,22 +53,72 @@ function renderProducts() {
 
     filtered.forEach(p => {
         const images = (p.images && p.images.length > 0) ? p.images : ['https://via.placeholder.com/300'];
-        let imgsHTML = images.slice(0, 3).map(img => `<img src="${img}" alt="${p.name}">`).join('');
+        
+        let imgsHTML = images.map(img => `<img src="${img}" alt="${p.name}">`).join('');
+        
+        // إنشاء الأسهم والنقاط إذا كانت الصور أكثر من صورة واحدة
+        let arrowsHTML = '';
+        let dotsHTML = '';
+        if (images.length > 1) {
+            arrowsHTML = `
+                <button class="slider-arrow prev" onclick="moveSlider('${p.id}', -1)">❯</button>
+                <button class="slider-arrow next" onclick="moveSlider('${p.id}', 1)">❮</button>
+            `;
+            dotsHTML = `<div class="slider-dots" id="dots-${p.id}">` + 
+                images.map((_, idx) => `<span class="dot ${idx === 0 ? 'active' : ''}"></span>`).join('') + 
+                `</div>`;
+        }
 
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
             <div class="slider-container">
-                <div class="slider-images">${imgsHTML}</div>
+                <div class="slider-images" id="slider-${p.id}" onscroll="updateDots('${p.id}')">
+                    ${imgsHTML}
+                </div>
+                ${arrowsHTML}
+                ${dotsHTML}
             </div>
             <div class="product-info">
                 <h3>${p.name}</h3>
-                <p style="font-size:0.85rem; color:#aaa; margin-top:5px;">${p.desc || ''}</p>
+                <p class="product-desc">${p.desc || ''}</p>
                 <div class="product-price">${p.price} د.ج</div>
-                <button class="add-btn" onclick="addToCart('${p.id}')">إضافة للسلة</button>
+                
+                <div class="qty-control">
+                    <button class="qty-btn" onclick="changeCardQty('${p.id}', 1)">+</button>
+                    <span class="qty-value" id="card-qty-${p.id}">1</span>
+                    <button class="qty-btn" onclick="changeCardQty('${p.id}', -1)">-</button>
+                </div>
+
+                <button class="add-btn" onclick="addToCart('${p.id}')">إضافة للسلة 🛒</button>
             </div>
         `;
         container.appendChild(card);
+    });
+}
+
+// التحكم بالسلايدر عبر الأسهم
+function moveSlider(prodId, direction) {
+    const slider = document.getElementById(`slider-${prodId}`);
+    if (!slider) return;
+    const scrollAmount = slider.clientWidth;
+    slider.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+}
+
+// تحديث مؤشر النقاط النشطة عند التمرير
+function updateDots(prodId) {
+    const slider = document.getElementById(`slider-${prodId}`);
+    const dotsContainer = document.getElementById(`dots-${prodId}`);
+    if (!slider || !dotsContainer) return;
+
+    const scrollIndex = Math.round(Math.abs(slider.scrollLeft) / slider.clientWidth);
+    const dots = dotsContainer.querySelectorAll('.dot');
+    dots.forEach((dot, idx) => {
+        if (idx === scrollIndex) {
+            dot.classList.add('active');
+        } else {
+            dot.classList.remove('active');
+        }
     });
 }
 
@@ -79,17 +129,33 @@ function filterCategory(cat, btn) {
     renderProducts();
 }
 
+// زيادة أو نقصان الكمية داخل كارت المنتج قبل الإضافة
+function changeCardQty(id, delta) {
+    const qtySpan = document.getElementById(`card-qty-${id}`);
+    if (!qtySpan) return;
+    let currentQty = parseInt(qtySpan.innerText) || 1;
+    currentQty += delta;
+    if (currentQty < 1) currentQty = 1;
+    qtySpan.innerText = currentQty;
+}
+
 function addToCart(id) {
     const prod = allProducts.find(p => p.id === id);
     if (!prod) return;
 
+    const qtySpan = document.getElementById(`card-qty-${id}`);
+    const qtyToAdd = qtySpan ? parseInt(qtySpan.innerText) || 1 : 1;
+
     const item = cart.find(i => i.id === id);
     if (item) {
-        item.qty++;
+        item.qty += qtyToAdd;
     } else {
-        cart.push({ ...prod, qty: 1 });
+        cart.push({ ...prod, qty: qtyToAdd });
     }
     
+    // إعادة تعيين كمية الكارت إلى 1
+    if (qtySpan) qtySpan.innerText = 1;
+
     updateCartUI();
     toggleCart(true);
 }
@@ -121,13 +187,13 @@ function updateCartUI() {
         const el = document.createElement('div');
         el.className = 'cart-item';
         el.innerHTML = `
-            <div>
-                <div style="font-weight:bold;">${item.name}</div>
+            <div class="cart-item-details">
+                <div style="font-weight:bold; color:#fff;">${item.name}</div>
                 <div class="gold-text">${item.price} د.ج × ${item.qty}</div>
             </div>
             <div style="display:flex; align-items:center; gap:5px;">
                 <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
-                <span style="padding:0 5px;">${item.qty}</span>
+                <span class="qty-value">${item.qty}</span>
                 <button class="qty-btn" onclick="changeQty('${item.id}', -1)">-</button>
                 <button class="remove-btn" onclick="removeFromCart('${item.id}')">×</button>
             </div>
@@ -190,7 +256,7 @@ async function submitOrder(e) {
 
     text += `\n💰 الإجمالي: ${total} د.ج`;
 
-    // حفظ الطلب بالتفصيل في Firebase Realtime Database
+    // حفظ الطلب في Firebase Realtime Database
     try {
         await db.ref("orders").push({
             customerName: name,
@@ -205,18 +271,17 @@ async function submitOrder(e) {
         console.error("Error saving order:", err);
     }
 
-    // إخلاق النافذة والسلة وتصفير القائمة
     closeCheckoutModal();
     toggleCart(false);
     cart = [];
     updateCartUI();
 
-    // إظهار شعار التنبيه
     const toast = document.getElementById('success-toast');
-    toast.style.display = 'block';
-    setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    if (toast) {
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    }
 
-    // توجيه للواتساب
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`, '_blank');
 }
 
