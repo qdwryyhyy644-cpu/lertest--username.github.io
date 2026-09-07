@@ -63,7 +63,7 @@
             display: inline-block; 
         }
         .btn-copy:hover { background: #0284c7; color: #fff; }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
 
         /* شريط تنزيل التطبيق PWA للأدمن */
         #pwa-install-banner {
@@ -100,6 +100,7 @@
             padding: 2px 6px !important;
             font-size: 1rem;
             border: none !important;
+            cursor: pointer;
         }
 
         /* جعل الجداول قابلة للتمرير داخل إطارها فقط دون تخريب الشاشة */
@@ -137,7 +138,7 @@
     <span>📲 تثبيت اللوحة كتطبيق على الشاشة؟</span>
     <div style="display: flex; gap: 5px; align-items: center;">
         <button id="btn-pwa-install">تنزيل</button>
-        <button onclick="dismissPwaBanner()" class="close-pwa-btn">✕</button>
+        <button id="btn-close-pwa" type="button" class="close-pwa-btn">✕</button>
     </div>
 </div>
 
@@ -240,15 +241,34 @@ if (!firebase.apps.length) {
 
 let base64Images = [];
 
-/* --- 📲 منطق تثبيت تطبيق PWA للأدمن --- */
+/* --- 📲 منطق تثبيت تطبيق PWA للأدمن وإغلاقه --- */
 let deferredPrompt;
 const installBanner = document.getElementById('pwa-install-banner');
 const installBtn = document.getElementById('btn-pwa-install');
+const closeBtn = document.getElementById('btn-close-pwa');
+
+function dismissPwaBanner() {
+    if (installBanner) {
+        installBanner.style.display = 'none';
+        installBanner.classList.add('hidden');
+    }
+}
+
+if (closeBtn) {
+    closeBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dismissPwaBanner();
+    });
+}
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    if (installBanner) installBanner.classList.remove('hidden');
+    if (installBanner) {
+        installBanner.style.display = 'flex';
+        installBanner.classList.remove('hidden');
+    }
 });
 
 if (installBtn) {
@@ -262,10 +282,6 @@ if (installBtn) {
             deferredPrompt = null;
         }
     });
-}
-
-function dismissPwaBanner() {
-    if (installBanner) installBanner.classList.add('hidden');
 }
 
 async function checkPassword() {
