@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة تحكم المتجر - عطور الفخامة</title>
+
+    <!-- إعدادات تحويل الصفحة إلى تطبيق PWA -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+
     <!-- Firebase SDKs for Realtime Database -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -56,6 +65,43 @@
         .btn-copy:hover { background: #0284c7; color: #fff; }
         .hidden { display: none; }
 
+        /* شريط تنزيل التطبيق PWA للأدمن */
+        #pwa-install-banner {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border: 1px solid #d4af37;
+            color: #ffffff;
+            padding: 10px 15px;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            width: 92%;
+            max-width: 450px;
+        }
+        #pwa-install-banner span { font-size: 0.85rem; font-weight: bold; }
+        #pwa-install-banner button { 
+            background: #d4af37; 
+            color: #000; 
+            padding: 6px 12px; 
+            width: auto; 
+            margin: 0; 
+            font-size: 0.8rem;
+        }
+        .close-pwa-btn {
+            background: transparent !important;
+            color: #94a3b8 !important;
+            padding: 2px 6px !important;
+            font-size: 1rem;
+            border: none !important;
+        }
+
         /* جعل الجداول قابلة للتمرير داخل إطارها فقط دون تخريب الشاشة */
         .table-responsive { 
             width: 100%; 
@@ -85,6 +131,15 @@
     </style>
 </head>
 <body>
+
+<!-- 📲 شريط دعوة تثبيت التطبيق للأدمن -->
+<div id="pwa-install-banner" class="hidden">
+    <span>📲 تثبيت اللوحة كتطبيق على الشاشة؟</span>
+    <div style="display: flex; gap: 5px; align-items: center;">
+        <button id="btn-pwa-install">تنزيل</button>
+        <button onclick="dismissPwaBanner()" class="close-pwa-btn">✕</button>
+    </div>
+</div>
 
 <div class="container">
 
@@ -184,6 +239,34 @@ if (!firebase.apps.length) {
 }
 
 let base64Images = [];
+
+/* --- 📲 منطق تثبيت تطبيق PWA للأدمن --- */
+let deferredPrompt;
+const installBanner = document.getElementById('pwa-install-banner');
+const installBtn = document.getElementById('btn-pwa-install');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (installBanner) installBanner.classList.remove('hidden');
+});
+
+if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                dismissPwaBanner();
+            }
+            deferredPrompt = null;
+        }
+    });
+}
+
+function dismissPwaBanner() {
+    if (installBanner) installBanner.classList.add('hidden');
+}
 
 async function checkPassword() {
     const inputPass = document.getElementById('admin-pass').value.trim();
