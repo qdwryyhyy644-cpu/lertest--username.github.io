@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>عطور الفخامة</title>
     <link rel="stylesheet" href="style.css">
+    
+    <!-- تسريع الاتصال بسيرفرات الصور و Firebase (Preconnect) -->
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="preconnect" href="https://otour-elfakhama-cf76d-default-rtdb.firebaseio.com">
+
     <!-- Firebase SDKs for Realtime Database -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -41,13 +46,27 @@
             height: 28px;
             fill: #ffffff;
         }
+
+        /* تحسينات للتحميل السريع والهيكل البصري الخفيف */
+        .products-grid {
+            min-height: 300px; /* منع اهتزاز layout أثناء التحميل */
+        }
+
+        /* تحسين صور المنتجات لتكون خفيفة ومستجيبة دون تأخير */
+        .product-card img {
+            content-visibility: auto;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            width: 100%;
+            background-color: #1e293b;
+        }
     </style>
 </head>
 <body>
 
     <header>
         <h1>عطور الفخامة</h1>
-        <div class="delivery-badge">🚚 التوصيل ممتوفر69 ولاية</div>
+        <div class="delivery-badge">🚚 التوصيل متوفر 58 ولاية</div>
         <button id="open-cart" onclick="toggleCart()">
             🛒 السلة (<span id="cart-count">0</span>)
         </button>
@@ -58,7 +77,6 @@
         <button class="cat-btn" onclick="filterCategory('عطور صيفية', this)">عطور صيفية</button>
         <button class="cat-btn" onclick="filterCategory('عطور رجالية', this)">عطور رجالية</button>
         <button class="cat-btn" onclick="filterCategory('عطور نسائية', this)">عطور نسائية</button>
-
         <button class="cat-btn" onclick="filterCategory('عطور للمناسبات', this)">عطور للمناسبات</button>
         <button class="cat-btn" onclick="filterCategory('الأكثر مبيعاً', this)">الأكثر مبيعاً</button>
     </div>
@@ -95,11 +113,11 @@
             <form id="order-form" onsubmit="submitOrder(event)">
                 <div class="form-group">
                     <label>الاسم الكامل:</label>
-                    <input type="text" id="cust-name" required placeholder="أدخل اسمك الكامل">
+                    <input type="text" id="cust-name" required placeholder="أدخل اسمك الكامل" autocomplete="name">
                 </div>
                 <div class="form-group">
                     <label>رقم الهاتف:</label>
-                    <input type="tel" id="cust-phone" required placeholder="06XXXXXXXX">
+                    <input type="tel" id="cust-phone" required placeholder="06XXXXXXXX" autocomplete="tel">
                 </div>
                 <div class="form-group">
                     <label>الولاية:</label>
@@ -126,6 +144,7 @@
         </svg>
     </a>
 
-    <script src="script.js"></script>
+    <!-- تحميل الجافاسكربت الخاص بالمتجر -->
+    <script src="script.js" defer></script>
 </body>
 </html>
