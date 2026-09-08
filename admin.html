@@ -32,6 +32,29 @@
             direction: rtl;
         }
 
+        /* نافذة تسجيل الدخول */
+        #login-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .login-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 380px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border: 1px solid var(--accent-gold);
+            text-align: center;
+        }
+
         /* شريط التثبيت */
         .install-banner {
             display: none;
@@ -47,7 +70,7 @@
         .install-btn { background: var(--accent-gold); color: #000; border: none; padding: 6px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .close-banner { background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer; }
 
-        .container { max-width: 800px; margin: 0 auto; }
+        .container { max-width: 800px; margin: 0 auto; display: none; } /* مخفية حتى يتم تسجيل الدخول */
         
         .card {
             background: var(--card-bg);
@@ -59,7 +82,7 @@
 
         h2, h3 { margin-top: 0; color: #fff; }
         
-        label { display: block; margin-top: 10px; font-size: 0.9rem; color: #cbd5e1; }
+        label { display: block; margin-top: 10px; font-size: 0.9rem; color: #cbd5e1; text-align: right; }
         input, select, textarea {
             width: 100%;
             padding: 10px;
@@ -108,7 +131,6 @@
             display: none;
         }
 
-        /* عرض رأسي */
         .vertical-list {
             display: flex;
             flex-direction: column;
@@ -158,7 +180,6 @@
         .btn-edit { background: var(--edit-color); color: white; }
         .btn-delete { background: var(--danger-color); color: white; }
 
-        /* نافذة الطباعة (الفاتورة) */
         @media print {
             body * { visibility: hidden; }
             #printable-facture, #printable-facture * { visibility: visible; }
@@ -176,6 +197,18 @@
 </head>
 <body>
 
+    <!-- شاشة تسجيل الدخول الإلزامية -->
+    <div id="login-overlay">
+        <div class="login-card">
+            <h2 style="color: var(--accent-gold);">👑 عطور الفخامة</h2>
+            <p style="color: #94a3b8; font-size: 0.9rem;">أدخل كلمة سر لوحة التحكم للوصول</p>
+            <form onsubmit="checkPassword(event)">
+                <input type="password" id="login-pass-input" placeholder="كلمة السر" required style="margin-bottom: 15px;">
+                <button type="submit" class="btn-primary" style="margin-top: 0;">دخول اللوحة 🔓</button>
+            </form>
+        </div>
+    </div>
+
     <!-- شريط التثبيت PWA -->
     <div id="pwa-banner" class="install-banner">
         <span>📲 تثبيت اللوحة كتطبيق على الشاشة؟</span>
@@ -185,7 +218,8 @@
         </div>
     </div>
 
-    <div class="container">
+    <!-- محتوى اللوحة الرئيسي -->
+    <div class="container" id="main-container">
         <!-- إعدادات اللوحة والمتجر -->
         <div class="card">
             <h3>⚙️ إعدادات المتجر واللوحة</h3>
@@ -287,6 +321,32 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        let correctPassword = "admin123"; // كلمة السر الافتراضية
+
+        // جلب الإعدادات الحالية من قاعدة البيانات
+        db.ref("settings").on('value', snap => {
+            const data = snap.val() || {};
+            if (data.whatsapp) document.getElementById('setting-whatsapp').value = data.whatsapp;
+            if (data.password) {
+                correctPassword = data.password;
+                document.getElementById('setting-password').value = data.password;
+            }
+        });
+
+        // التحقق من كلمة السر عند فتح الصفحة
+        function checkPassword(e) {
+            e.preventDefault();
+            const inputPass = document.getElementById('login-pass-input').value;
+
+            if (inputPass === correctPassword) {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('main-container').style.display = 'block';
+                loadData(); // تحميل البيانات بعد التحقق
+            } else {
+                alert("كلمة السر غير صحيحة!");
+            }
+        }
+
         // PWA Banner Logic
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -306,13 +366,6 @@
         function hidePWABanner() {
             document.getElementById('pwa-banner').classList.remove('show');
         }
-
-        // جلب الإعدادات الحالية (كلمة السر ورقم الواتساب)
-        db.ref("settings").on('value', snap => {
-            const data = snap.val() || {};
-            if (data.whatsapp) document.getElementById('setting-whatsapp').value = data.whatsapp;
-            if (data.password) document.getElementById('setting-password').value = data.password;
-        });
 
         // حفظ الإعدادات
         async function saveSettings(e) {
@@ -370,15 +423,11 @@
             }
 
             if (editId) {
-                // وضع التعديل
                 const updateData = { name, price, category };
-                if (imgBase64) {
-                    updateData.image = imgBase64;
-                }
+                if (imgBase64) updateData.image = imgBase64;
                 await db.ref("products/" + editId).update(updateData);
                 alert("تم تعديل المنتج بنجاح!");
             } else {
-                // وضع الإضافة
                 await db.ref("products").push({
                     name,
                     price,
@@ -391,7 +440,6 @@
             resetProductForm();
         }
 
-        // إعداد نموذج التعديل
         function editProduct(key) {
             const p = currentProducts[key];
             if (!p) return;
@@ -406,11 +454,9 @@
             document.getElementById('cancel-edit-btn').style.display = "block";
             document.getElementById('img-notice').style.display = "block";
             
-            // التمرير لأعلى النموذج
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // إعادة النموذج لوضعه الطبيعي (إضافة)
         function resetProductForm() {
             document.getElementById('add-product-form').reset();
             document.getElementById('edit-prod-id').value = "";
@@ -420,70 +466,71 @@
             document.getElementById('img-notice').style.display = "none";
         }
 
-        // جلب البيانات وعرضها رأسياً
-        db.ref("products").on('value', snap => {
-            const container = document.getElementById('products-list');
-            container.innerHTML = "";
-            currentProducts = snap.val() || {};
-            
-            snap.forEach(child => {
-                const p = child.val();
-                const key = child.key;
-                container.innerHTML += `
-                    <div class="list-item-card">
-                        <div class="item-header">
-                            <b>${p.name}</b>
-                            <span style="color:var(--accent-gold); font-weight:bold;">${p.price} د.ج</span>
-                        </div>
-                        <div class="item-body">التصنيف: ${p.category || 'عام'}</div>
-                        <div class="item-actions">
-                            <button class="btn-sm btn-edit" onclick="editProduct('${key}')">✏️ تعديل</button>
-                            <button class="btn-sm btn-delete" onclick="deleteProduct('${key}')">حذف المنتج</button>
-                        </div>
-                    </div>`;
+        // تحميل البيانات
+        function loadData() {
+            db.ref("products").on('value', snap => {
+                const container = document.getElementById('products-list');
+                container.innerHTML = "";
+                currentProducts = snap.val() || {};
+                
+                snap.forEach(child => {
+                    const p = child.val();
+                    const key = child.key;
+                    container.innerHTML += `
+                        <div class="list-item-card">
+                            <div class="item-header">
+                                <b>${p.name}</b>
+                                <span style="color:var(--accent-gold); font-weight:bold;">${p.price} د.ج</span>
+                            </div>
+                            <div class="item-body">التصنيف: ${p.category || 'عام'}</div>
+                            <div class="item-actions">
+                                <button class="btn-sm btn-edit" onclick="editProduct('${key}')">✏️ تعديل</button>
+                                <button class="btn-sm btn-delete" onclick="deleteProduct('${key}')">حذف المنتج</button>
+                            </div>
+                        </div>`;
+                });
             });
-        });
+
+            db.ref("orders").on('value', snap => {
+                const container = document.getElementById('orders-list');
+                container.innerHTML = "";
+                currentOrders = snap.val() || {};
+                
+                snap.forEach(child => {
+                    const o = child.val();
+                    const key = child.key;
+                    
+                    let itemsSummary = "";
+                    if(o.items) {
+                        itemsSummary = o.items.map(i => `${i.name} (${i.qty})`).join(', ');
+                    }
+
+                    container.innerHTML += `
+                        <div class="list-item-card">
+                            <div class="item-header">
+                                <b>الزبون: ${o.customerName || 'غير معروف'}</b>
+                                <span style="color:var(--accent-gold);">${o.total} د.ج</span>
+                            </div>
+                            <div class="item-body">
+                                📞 الهاتف: ${o.phone || '-'}<br>
+                                📍 العنوان: ${o.state || ''} - ${o.address || ''}<br>
+                                🛍️ الطلب: ${itemsSummary}
+                            </div>
+                            <div class="item-actions">
+                                <button class="btn-sm btn-print" onclick="openFacture('${key}')">🖨️ طباعة وصل</button>
+                                <button class="btn-sm btn-delete" onclick="deleteOrder('${key}')">حذف</button>
+                            </div>
+                        </div>`;
+                });
+            });
+        }
 
         let currentOrders = {};
-        db.ref("orders").on('value', snap => {
-            const container = document.getElementById('orders-list');
-            container.innerHTML = "";
-            currentOrders = snap.val() || {};
-            
-            snap.forEach(child => {
-                const o = child.val();
-                const key = child.key;
-                
-                let itemsSummary = "";
-                if(o.items) {
-                    itemsSummary = o.items.map(i => `${i.name} (${i.qty})`).join(', ');
-                }
 
-                container.innerHTML += `
-                    <div class="list-item-card">
-                        <div class="item-header">
-                            <b>الزبون: ${o.customerName || 'غير معروف'}</b>
-                            <span style="color:var(--accent-gold);">${o.total} د.ج</span>
-                        </div>
-                        <div class="item-body">
-                            📞 الهاتف: ${o.phone || '-'}<br>
-                            📍 العنوان: ${o.state || ''} - ${o.address || ''}<br>
-                            🛍️ الطلب: ${itemsSummary}
-                        </div>
-                        <div class="item-actions">
-                            <button class="btn-sm btn-print" onclick="openFacture('${key}')">🖨️ طباعة وصل</button>
-                            <button class="btn-sm btn-delete" onclick="deleteOrder('${key}')">حذف</button>
-                        </div>
-                    </div>`;
-            });
-        });
-
-        // إدراج وحذف
         function deleteProduct(key) { if(confirm("حذف المنتج؟")) db.ref("products/"+key).remove(); }
         function deleteOrder(key) { if(confirm("حذف الطلب؟")) db.ref("orders/"+key).remove(); }
         function deleteAllOrders() { if(confirm("هل تريد مسح كافة الطلبات؟")) db.ref("orders").remove(); }
 
-        // فتح وتجهيز الفاتورة للطباعة
         function openFacture(orderKey) {
             const order = currentOrders[orderKey];
             if(!order) return;
