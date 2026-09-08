@@ -20,6 +20,7 @@
             --danger-color: #ef4444;
             --success-color: #22c55e;
             --btn-blue: #0284c7;
+            --edit-color: #f59e0b;
         }
 
         body {
@@ -82,7 +83,20 @@
             cursor: pointer;
         }
 
-        /* جعل العرض والتمرير رأسياً من الأعلى للأسباب الراحة */
+        button.btn-cancel {
+            background: #64748b;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-top: 8px;
+            cursor: pointer;
+            display: none;
+        }
+
+        /* عرض رأسي */
         .vertical-list {
             display: flex;
             flex-direction: column;
@@ -129,6 +143,7 @@
             font-weight: bold;
         }
         .btn-print { background: #3b82f6; color: white; }
+        .btn-edit { background: var(--edit-color); color: white; }
         .btn-delete { background: var(--danger-color); color: white; }
 
         /* نافذة الطباعة (الفاتورة) */
@@ -159,10 +174,12 @@
     </div>
 
     <div class="container">
-        <!-- إضافة منتج جديد -->
+        <!-- إضافة / تعديل منتج -->
         <div class="card">
-            <h3>➕ إضافة عطر جديد للمتجر</h3>
+            <h3 id="form-title">➕ إضافة عطر جديد للمتجر</h3>
             <form id="add-product-form" onsubmit="saveProduct(event)">
+                <input type="hidden" id="edit-prod-id">
+                
                 <label>اسم العطر:</label>
                 <input type="text" id="prod-name" required placeholder="اسم العطر">
                 
@@ -178,14 +195,16 @@
                     <option value="الأكثر مبيعاً">الأكثر مبيعاً</option>
                 </select>
 
-                <label>صورة العطر:</label>
-                <input type="file" id="prod-img" accept="image/*" required>
+                <label id="img-label">صورة العطر:</label>
+                <input type="file" id="prod-img" accept="image/*">
+                <small id="img-notice" style="color: #94a3b8; display: none;">اترك هذا الحقل فارغاً إذا لا تريد تغيير الصورة الحالية.</small>
 
-                <button type="submit" class="btn-primary">نشر المنتج في المتجر</button>
+                <button type="submit" id="submit-btn" class="btn-primary">نشر المنتج في المتجر</button>
+                <button type="button" id="cancel-edit-btn" class="btn-cancel" onclick="resetProductForm()">إلغاء التعديل</button>
             </form>
         </div>
 
-        <!-- قائمة المنتجات الحالية (تمرير رأسي من الأعلى) -->
+        <!-- قائمة المنتجات الحالية -->
         <div class="card">
             <h3>📦 المنتجات الحالية</h3>
             <div id="products-list" class="vertical-list">
@@ -193,7 +212,7 @@
             </div>
         </div>
 
-        <!-- قائمة الطلبات المسجلة (تمرير رأسي من الأعلى) -->
+        <!-- قائمة الطلبات المسجلة -->
         <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <h3>🛍️ الطلبات المسجلة</h3>
@@ -235,7 +254,7 @@
     </div>
 
     <script>
-        // تهيئة Firebase (المفاتيح الخاصة بك)
+        // تهيئة Firebase
         const firebaseConfig = {
             databaseURL: "https://otour-elfakhama-cf76d-default-rtdb.firebaseio.com"
         };
@@ -262,7 +281,7 @@
             document.getElementById('pwa-banner').classList.remove('show');
         }
 
-        // ضغط الصورة تلقائياً لتسريع التحميل لثانيتين
+        // ضغط الصورة تلقائياً
         function compressImage(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -282,30 +301,87 @@
             });
         }
 
-        // إضافة منتج
+        // حفظ المنتج (إضافة أو تعديل)
+        let currentProducts = {};
         async function saveProduct(e) {
             e.preventDefault();
+            
+            const editId = document.getElementById('edit-prod-id').value;
+            const name = document.getElementById('prod-name').value;
+            const price = document.getElementById('prod-price').value;
+            const category = document.getElementById('prod-category').value;
             const file = document.getElementById('prod-img').files[0];
-            if (!file) return;
 
-            const imgBase64 = await compressImage(file);
-            await db.ref("products").push({
-                name: document.getElementById('prod-name').value,
-                price: document.getElementById('prod-price').value,
-                category: document.getElementById('prod-category').value,
-                image: imgBase64
-            });
+            if (!editId && !file) {
+                alert("يرجى اختيار صورة للمنتج الجديدة!");
+                return;
+            }
 
-            alert("تم إدراج العطر بنجاح!");
+            let imgBase64 = null;
+            if (file) {
+                imgBase64 = await compressImage(file);
+            }
+
+            if (editId) {
+                // وضع التعديل
+                const updateData = { name, price, category };
+                if (imgBase64) {
+                    updateData.image = imgBase64;
+                }
+                await db.ref("products/" + editId).update(updateData);
+                alert("تم تعديل المنتج بنجاح!");
+            } else {
+                // وضع الإضافة
+                await db.ref("products").push({
+                    name,
+                    price,
+                    category,
+                    image: imgBase64
+                });
+                alert("تم إدراج العطر بنجاح!");
+            }
+
+            resetProductForm();
+        }
+
+        // إعداد نموذج التعديل
+        function editProduct(key) {
+            const p = currentProducts[key];
+            if (!p) return;
+
+            document.getElementById('edit-prod-id').value = key;
+            document.getElementById('prod-name').value = p.name || '';
+            document.getElementById('prod-price').value = p.price || '';
+            document.getElementById('prod-category').value = p.category || 'عطور صيفية';
+            
+            document.getElementById('form-title').innerText = "✏️ تعديل العطر الحالي";
+            document.getElementById('submit-btn').innerText = "حفظ التعديلات";
+            document.getElementById('cancel-edit-btn').style.display = "block";
+            document.getElementById('img-notice').style.display = "block";
+            
+            // التمرير لأعلى النموذج
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // إعادة النموذج لوضعه الطبيعي (إضافة)
+        function resetProductForm() {
             document.getElementById('add-product-form').reset();
+            document.getElementById('edit-prod-id').value = "";
+            document.getElementById('form-title').innerText = "➕ إضافة عطر جديد للمتجر";
+            document.getElementById('submit-btn').innerText = "نشر المنتج في المتجر";
+            document.getElementById('cancel-edit-btn').style.display = "none";
+            document.getElementById('img-notice').style.display = "none";
         }
 
         // جلب البيانات وعرضها رأسياً
         db.ref("products").on('value', snap => {
             const container = document.getElementById('products-list');
             container.innerHTML = "";
+            currentProducts = snap.val() || {};
+            
             snap.forEach(child => {
                 const p = child.val();
+                const key = child.key;
                 container.innerHTML += `
                     <div class="list-item-card">
                         <div class="item-header">
@@ -314,7 +390,8 @@
                         </div>
                         <div class="item-body">التصنيف: ${p.category || 'عام'}</div>
                         <div class="item-actions">
-                            <button class="btn-sm btn-delete" onclick="deleteProduct('${child.key}')">حذف المنتج</button>
+                            <button class="btn-sm btn-edit" onclick="editProduct('${key}')">✏️ تعديل</button>
+                            <button class="btn-sm btn-delete" onclick="deleteProduct('${key}')">حذف المنتج</button>
                         </div>
                     </div>`;
             });
