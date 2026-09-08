@@ -83,6 +83,18 @@
             cursor: pointer;
         }
 
+        button.btn-success {
+            background: var(--success-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
         button.btn-cancel {
             background: #64748b;
             color: white;
@@ -174,6 +186,20 @@
     </div>
 
     <div class="container">
+        <!-- إعدادات اللوحة والمتجر -->
+        <div class="card">
+            <h3>⚙️ إعدادات المتجر واللوحة</h3>
+            <form id="settings-form" onsubmit="saveSettings(event)">
+                <label>رقم الواتساب (لاستقبال الطلبات):</label>
+                <input type="text" id="setting-whatsapp" placeholder="مثال: 213600000000">
+
+                <label>كلمة سر اللوحة الجديدة:</label>
+                <input type="password" id="setting-password" placeholder="أدخل كلمة السر الجديدة">
+
+                <button type="submit" class="btn-success">حفظ الإعدادات 💾</button>
+            </form>
+        </div>
+
         <!-- إضافة / تعديل منتج -->
         <div class="card">
             <h3 id="form-title">➕ إضافة عطر جديد للمتجر</h3>
@@ -281,6 +307,27 @@
             document.getElementById('pwa-banner').classList.remove('show');
         }
 
+        // جلب الإعدادات الحالية (كلمة السر ورقم الواتساب)
+        db.ref("settings").on('value', snap => {
+            const data = snap.val() || {};
+            if (data.whatsapp) document.getElementById('setting-whatsapp').value = data.whatsapp;
+            if (data.password) document.getElementById('setting-password').value = data.password;
+        });
+
+        // حفظ الإعدادات
+        async function saveSettings(e) {
+            e.preventDefault();
+            const whatsapp = document.getElementById('setting-whatsapp').value;
+            const password = document.getElementById('setting-password').value;
+
+            await db.ref("settings").update({
+                whatsapp: whatsapp,
+                password: password
+            });
+
+            alert("تم حفظ الإعدادات بنجاح!");
+        }
+
         // ضغط الصورة تلقائياً
         function compressImage(file) {
             return new Promise((resolve) => {
@@ -313,7 +360,7 @@
             const file = document.getElementById('prod-img').files[0];
 
             if (!editId && !file) {
-                alert("يرجى اختيار صورة للمنتج الجديدة!");
+                alert("يرجى اختيار صورة للمنتج الجديد!");
                 return;
             }
 
