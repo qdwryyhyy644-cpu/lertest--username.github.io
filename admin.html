@@ -3,509 +3,392 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم المتجر - عطور الفخامة</title>
-
-    <!-- إعدادات تحويل الصفحة إلى تطبيق PWA -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#0f172a">
+    <title>لوحة التحكم - عطور الفخامة</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="theme-color" content="#0f172a">
 
-    <!-- Firebase SDKs for Realtime Database -->
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <style>
-        * { box-sizing: border-box; font-family: system-ui, sans-serif; }
-        html, body { 
-            background: #0f172a; 
-            color: #fff; 
-            margin: 0; 
-            padding: 10px; 
-            width: 100%; 
-            overflow-x: hidden; /* يمنع التمدد الأفقي للشاشة */
-        }
-        .container { max-width: 1000px; margin: 0 auto; width: 100%; }
-        .card { 
-            background: #1e293b; 
-            padding: 15px; 
-            border-radius: 10px; 
-            margin-bottom: 20px; 
-            border: 1px solid #334155; 
-            width: 100%;
-            max-width: 100%;
-            overflow: hidden; 
-        }
-        input, select, textarea, button { 
-            width: 100%; 
-            padding: 10px; 
-            margin: 8px 0; 
-            border-radius: 6px; 
-            border: 1px solid #475569; 
-            background: #0f172a; 
-            color: #fff; 
-        }
-        button { background: #0284c7; border: none; font-weight: bold; cursor: pointer; }
-        button:hover { background: #0369a1; }
-        .btn-danger { background: #e11d48; }
-        .btn-danger:hover { background: #be123c; }
-        .btn-copy { 
-            background: #334155; 
-            color: #38bdf8; 
-            border: 1px solid #0284c7; 
-            padding: 4px 8px; 
-            border-radius: 4px; 
-            font-size: 0.8rem; 
-            cursor: pointer; 
-            margin-top: 5px; 
-            width: auto; 
-            display: inline-block; 
-        }
-        .btn-copy:hover { background: #0284c7; color: #fff; }
-        .hidden { display: none !important; }
 
-        /* شريط تنزيل التطبيق PWA للأدمن */
-        #pwa-install-banner {
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            border: 1px solid #d4af37;
-            color: #ffffff;
-            padding: 10px 15px;
-            border-radius: 10px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-            z-index: 9999;
-            display: flex;
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-gold: #d4af37;
+            --text-color: #f8fafc;
+            --danger-color: #ef4444;
+            --success-color: #22c55e;
+            --btn-blue: #0284c7;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            direction: rtl;
+        }
+
+        /* شريط التثبيت */
+        .install-banner {
+            display: none;
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid var(--accent-gold);
+            padding: 12px 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
-            width: 92%;
-            max-width: 450px;
         }
-        #pwa-install-banner span { font-size: 0.85rem; font-weight: bold; }
-        #pwa-install-banner button { 
-            background: #d4af37; 
-            color: #000; 
-            padding: 6px 12px; 
-            width: auto; 
-            margin: 0; 
-            font-size: 0.8rem;
+        .install-banner.show { display: flex; }
+        .install-btn { background: var(--accent-gold); color: #000; border: none; padding: 6px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .close-banner { background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer; }
+
+        .container { max-width: 800px; margin: 0 auto; }
+        
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        .close-pwa-btn {
-            background: transparent !important;
-            color: #94a3b8 !important;
-            padding: 2px 6px !important;
-            font-size: 1rem;
-            border: none !important;
+
+        h2, h3 { margin-top: 0; color: #fff; }
+        
+        label { display: block; margin-top: 10px; font-size: 0.9rem; color: #cbd5e1; }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: #fff;
+            box-sizing: border-box;
+        }
+
+        button.btn-primary {
+            background: var(--btn-blue);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-top: 15px;
             cursor: pointer;
         }
 
-        /* جعل الجداول قابلة للتمرير داخل إطارها فقط دون تخريب الشاشة */
-        .table-responsive { 
-            width: 100%; 
-            overflow-x: auto; 
-            -webkit-overflow-scrolling: touch; 
-            margin-top: 10px;
-            border-radius: 6px;
+        /* جعل العرض والتمرير رأسياً من الأعلى للأسباب الراحة */
+        .vertical-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 15px;
         }
-        table { 
-            width: 100%; 
-            min-width: 650px; /* يحافظ على تنسيق جدول الطلبات دون انكماش */
-            border-collapse: collapse; 
-            font-size: 0.85rem; 
-        }
-        th, td { 
-            border: 1px solid #334155; 
-            padding: 10px; 
-            text-align: right; 
-            vertical-align: middle; 
-            word-break: break-word; 
-        }
-        th { background: #0f172a; color: #d4af37; white-space: nowrap; }
 
-        .img-preview-container { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
-        .img-preview { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #d4af37; }
-        .items-list-text { margin: 0; padding-right: 15px; font-size: 0.8rem; color: #cbd5e1; }
+        .list-item-card {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 8px;
+        }
+
+        .item-body {
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-print { background: #3b82f6; color: white; }
+        .btn-delete { background: var(--danger-color); color: white; }
+
+        /* نافذة الطباعة (الفاتورة) */
+        @media print {
+            body * { visibility: hidden; }
+            #printable-facture, #printable-facture * { visibility: visible; }
+            #printable-facture { position: absolute; left: 0; top: 0; width: 100%; color: #000; background: #fff; padding: 20px; }
+        }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 2000;
+        }
+        .modal-body {
+            background: #ffffff; color: #000; width: 90%; max-width: 500px; padding: 20px; border-radius: 12px;
+        }
     </style>
 </head>
 <body>
 
-<!-- 📲 شريط دعوة تثبيت التطبيق للأدمن -->
-<div id="pwa-install-banner" class="hidden">
-    <span>📲 تثبيت اللوحة كتطبيق على الشاشة؟</span>
-    <div style="display: flex; gap: 5px; align-items: center;">
-        <button id="btn-pwa-install">تنزيل</button>
-        <button id="btn-close-pwa" type="button" class="close-pwa-btn">✕</button>
-    </div>
-</div>
-
-<div class="container">
-
-    <!-- 1. شاشة تسجيل الدخول -->
-    <div id="login-screen" class="card" style="max-width:400px; margin: 50px auto; text-align: center;">
-        <h2>🔐 تسجيل الدخول للوحة التحكم</h2>
-        <input type="password" id="admin-pass" placeholder="أدخل كلمة السر">
-        <button type="button" onclick="checkPassword()">دخول</button>
-        <p id="login-error" style="color:#f43f5e;" class="hidden">كلمة السر غير صحيحة!</p>
+    <!-- شريط التثبيت PWA -->
+    <div id="pwa-banner" class="install-banner">
+        <span>📲 تثبيت اللوحة كتطبيق على الشاشة؟</span>
+        <div>
+            <button class="install-btn" onclick="installPWA()">تنزيل</button>
+            <button class="close-banner" onclick="hidePWABanner()">✕</button>
+        </div>
     </div>
 
-    <!-- 2. محتوى لوحة التحكم -->
-    <div id="dashboard-screen" class="hidden">
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h2 style="margin: 0; font-size: 1.3rem;">👑 لوحة إدارة المتجر</h2>
-            <button onclick="logout()" style="width: auto; padding: 8px 15px;" class="btn-danger">خروج</button>
-        </div>
-
-        <!-- 🔑 إعدادات تغيير كلمة السر -->
-        <div class="card">
-            <h3>🔑 تغيير كلمة سر اللوحة</h3>
-            <input type="password" id="new-pass" placeholder="كلمة السر الجديدة" autocomplete="off">
-            <button onclick="changePassword()" style="background: #d4af37; color: #000;">تحديث كلمة السر</button>
-        </div>
-
-        <!-- 📱 إعدادات رقم الواتساب -->
-        <div class="card">
-            <h3>📱 رقم الواتساب الخاص بالاستلام</h3>
-            <!-- إظهار المثال فقط وإغلاق الاقتراحات التلقائية -->
-            <input type="text" id="whatsapp-num" placeholder="مثال: 213XXXXXXXXX" autocomplete="off">
-            <button onclick="saveWhatsapp()">حفظ الرقم</button>
-        </div>
-
-        <!-- ➕ إضافة منتج جديد -->
+    <div class="container">
+        <!-- إضافة منتج جديد -->
         <div class="card">
             <h3>➕ إضافة عطر جديد للمتجر</h3>
-            <!-- إيقاف اقتراحات الأسماء القديمة -->
-            <input type="text" id="p-name" placeholder="اسم العطر" autocomplete="off">
-            <input type="number" id="p-price" placeholder="السعر (د.ج)" autocomplete="off">
-            
-            <!-- حقل الكمية المتوفرة جديد -->
-            <input type="number" id="p-stock" placeholder="الكمية المتوفرة في المخزن (مثال: 10)" autocomplete="off" min="1">
-            
-            <label style="font-size: 0.9rem; color: #cbd5e1;">التصنيف:</label>
-            <select id="p-category">
-                <option value="عطور صيفية">عطور صيفية</option>
-                <option value="عطور رجالية">عطور رجالية</option>
-                <option value="عطور نسائية">عطور نسائية</option>
-                <option value="عطور للمناسبات">عطور للمناسبات</option>
-                <option value="الأكثر مبيعاً">الأكثر مبيعاً</option>
-            </select>
+            <form id="add-product-form" onsubmit="saveProduct(event)">
+                <label>اسم العطر:</label>
+                <input type="text" id="prod-name" required placeholder="اسم العطر">
+                
+                <label>السعر (د.ج):</label>
+                <input type="number" id="prod-price" required placeholder="مثال: 4500">
+                
+                <label>التصنيف:</label>
+                <select id="prod-category">
+                    <option value="عطور صيفية">عطور صيفية</option>
+                    <option value="عطور رجالية">عطور رجالية</option>
+                    <option value="عطور نسائية">عطور نسائية</option>
+                    <option value="عطور للمناسبات">عطور للمناسبات</option>
+                    <option value="الأكثر مبيعاً">الأكثر مبيعاً</option>
+                </select>
 
-            <label style="font-size: 0.9rem; color: #cbd5e1;">اختر صور العطر من المعرض (3 صور كحد أقصى):</label>
-            <input type="file" id="p-files" accept="image/*" multiple onchange="previewImages(event)">
-            <div class="img-preview-container" id="preview-box"></div>
+                <label>صورة العطر:</label>
+                <input type="file" id="prod-img" accept="image/*" required>
 
-            <textarea id="p-desc" placeholder="وصف العطر" autocomplete="off"></textarea>
-            <button onclick="addProduct()">نشر المنتج في المتجر</button>
+                <button type="submit" class="btn-primary">نشر المنتج في المتجر</button>
+            </form>
         </div>
 
-        <!-- 📦 إدارة المنتجات الحالية -->
+        <!-- قائمة المنتجات الحالية (تمرير رأسي من الأعلى) -->
         <div class="card">
             <h3>📦 المنتجات الحالية</h3>
-            <div class="table-responsive" id="products-list">تحميل المنتجات...</div>
-        </div>
-
-        <!-- 🛍️ قائمة الطلبات المسجلة -->
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-                <h3 style="margin:0;">🛍️ الطلبات المسجلة</h3>
-                <button onclick="deleteAllOrders()" class="btn-danger" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">🗑️ حذف جميع الطلبات</button>
+            <div id="products-list" class="vertical-list">
+                <p style="color:#94a3b8;">جاري تحميل المنتجات...</p>
             </div>
-            <div class="table-responsive" id="orders-list">تحميل الطلبات...</div>
         </div>
 
+        <!-- قائمة الطلبات المسجلة (تمرير رأسي من الأعلى) -->
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3>🛍️ الطلبات المسجلة</h3>
+                <button class="btn-sm btn-delete" onclick="deleteAllOrders()">حذف جميع الطلبات 🗑️</button>
+            </div>
+            <div id="orders-list" class="vertical-list">
+                <p style="color:#94a3b8;">جاري تحميل الطلبات...</p>
+            </div>
+        </div>
     </div>
 
-</div>
+    <!-- نافذة معاينة وطباعة الفاتورة -->
+    <div id="facture-modal" class="modal-overlay">
+        <div class="modal-body">
+            <div id="printable-facture">
+                <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px;">
+                    <h2 style="margin:0; color:#000;">عطور الفخامة</h2>
+                    <p style="margin:4px 0; font-size:0.9rem;">وصل طلب / Facture de commande</p>
+                    <small id="facture-date"></small>
+                </div>
+                <div style="margin:15px 0; font-size:0.95rem;" id="facture-client-info"></div>
+                <table style="width:100%; border-collapse:collapse; margin-top:10px; font-size:0.9rem;" border="1">
+                    <thead>
+                        <tr style="background:#f2f2f2;">
+                            <th style="padding:6px;">المنتج</th>
+                            <th style="padding:6px;">الكمية</th>
+                            <th style="padding:6px;">السعر</th>
+                        </tr>
+                    </thead>
+                    <tbody id="facture-items"></tbody>
+                </table>
+                <h3 style="text-align:left; margin-top:15px; color:#000;">الإجمالي: <span id="facture-total"></span> د.ج</h3>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn-primary" style="margin:0;" onclick="window.print()">🖨️ طباعة الفاتورة</button>
+                <button class="btn-sm btn-delete" style="flex:1;" onclick="closeFactureModal()">إغلاق</button>
+            </div>
+        </div>
+    </div>
 
-<script>
-// 🔑 مفاتيح Firebase الخاصة بمشروعك
-const firebaseConfig = {
-  apiKey: "AIzaSyC3Y1n6gd-XtJdv-7UKOesb9-Lgc2lII0c",
-  authDomain: "otour-elfakhama-cf76d.firebaseapp.com",
-  projectId: "otour-elfakhama-cf76d",
-  storageBucket: "otour-elfakhama-cf76d.firebasestorage.app",
-  messagingSenderId: "843441752510",
-  appId: "1:843441752510:web:94b201def5ea9510c491ef",
-  databaseURL: "https://otour-elfakhama-cf76d-default-rtdb.firebaseio.com"
-};
-
-let db = null;
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.database();
-}
-
-let base64Images = [];
-
-/* --- 📲 منطق تثبيت تطبيق PWA للأدمن وإغلاقه --- */
-let deferredPrompt;
-const installBanner = document.getElementById('pwa-install-banner');
-const installBtn = document.getElementById('btn-pwa-install');
-const closeBtn = document.getElementById('btn-close-pwa');
-
-function dismissPwaBanner() {
-    if (installBanner) {
-        installBanner.style.display = 'none';
-        installBanner.classList.add('hidden');
-    }
-}
-
-if (closeBtn) {
-    closeBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        dismissPwaBanner();
-    });
-}
-
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    if (installBanner) {
-        installBanner.style.display = 'flex';
-        installBanner.classList.remove('hidden');
-    }
-});
-
-if (installBtn) {
-    installBtn.addEventListener('click', async () => {
-        if (deferredPrompt) {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                dismissPwaBanner();
-            }
-            deferredPrompt = null;
-        }
-    });
-}
-
-async function checkPassword() {
-    const inputPass = document.getElementById('admin-pass').value.trim();
-    let validPass = localStorage.getItem('admin_pass');
-
-    if (!validPass && db) {
-        try {
-            const snap = await db.ref("settings/security/password").once('value');
-            if (snap.exists()) {
-                validPass = snap.val();
-                localStorage.setItem('admin_pass', validPass);
-            }
-        } catch(e) { console.log(e); }
-    }
-
-    if (!validPass) validPass = "admin";
-
-    if (inputPass === validPass) {
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('dashboard-screen').classList.remove('hidden');
-        if (db) loadDashboardData();
-    } else {
-        document.getElementById('login-error').classList.remove('hidden');
-    }
-}
-
-async function changePassword() {
-    const newPass = document.getElementById('new-pass').value.trim();
-    if (!newPass) { alert("يرجى كتابة كلمة السر الجديدة!"); return; }
-
-    localStorage.setItem('admin_pass', newPass);
-
-    if (db) {
-        try {
-            await db.ref("settings/security").update({ password: newPass });
-        } catch(e) {
-            console.error(e);
-        }
-    }
-
-    alert("تم تحديث كلمة السر بنجاح!");
-    document.getElementById('new-pass').value = '';
-}
-
-function logout() {
-    location.reload();
-}
-
-function previewImages(event) {
-    const files = Array.from(event.target.files);
-    if (files.length > 3) {
-        alert("يمكنك اختيار 3 صور كحد أقصى فقط!");
-        event.target.value = "";
-        return;
-    }
-
-    base64Images = [];
-    const box = document.getElementById('preview-box');
-    box.innerHTML = '';
-
-    files.slice(0, 3).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = new Image();
-            img.src = e.target.result;
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                const maxWidth = 600;
-                const scale = maxWidth / img.width;
-                canvas.width = (img.width > maxWidth) ? maxWidth : img.width;
-                canvas.height = (img.width > maxWidth) ? (img.height * scale) : img.height;
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
-                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                base64Images.push(compressedBase64);
-
-                const previewImg = document.createElement('img');
-                previewImg.src = compressedBase64;
-                previewImg.className = 'img-preview';
-                box.appendChild(previewImg);
-            }
+    <script>
+        // تهيئة Firebase (المفاتيح الخاصة بك)
+        const firebaseConfig = {
+            databaseURL: "https://otour-elfakhama-cf76d-default-rtdb.firebaseio.com"
         };
-        reader.readAsDataURL(file);
-    });
-}
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-function copyPhone(phone) {
-    navigator.clipboard.writeText(phone).then(() => {
-        alert("تم نسخ الرقم: " + phone);
-    }).catch(err => {
-        console.error("فشل النسخ: ", err);
-    });
-}
+        // PWA Banner Logic
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('pwa-banner').classList.add('show');
+        });
 
-function loadDashboardData() {
-    if (!db) return;
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(() => {
+                    document.getElementById('pwa-banner').classList.remove('show');
+                });
+            }
+        }
+        function hidePWABanner() {
+            document.getElementById('pwa-banner').classList.remove('show');
+        }
 
-    // جلب المنتجات وعرضها مع الكمية المتوفرة
-    db.ref("products").on('value', snapshot => {
-        let html = '<table><tr><th>الصورة</th><th>الاسم</th><th>التصنيف</th><th>السعر</th><th>الكمية</th><th>إجراء</th></tr>';
-        if (snapshot.exists()) {
-            snapshot.forEach(child => {
-                const p = child.val();
-                const key = child.key;
-                const img = (p.images && p.images.length > 0) ? p.images[0] : '';
-                const stock = (p.stock !== undefined && p.stock !== null) ? p.stock : 'غير محدد';
-                html += `<tr>
-                    <td><img src="${img}" width="40" height="40" style="object-fit:cover; border-radius:4px;"></td>
-                    <td>${p.name}</td>
-                    <td><small>${p.category || 'عام'}</small></td>
-                    <td>${p.price} د.ج</td>
-                    <td><b style="color:#38bdf8;">${stock}</b></td>
-                    <td><button class="btn-danger" style="padding:5px 10px; width:auto;" onclick="deleteProduct('${key}')">حذف</button></td>
-                </tr>`;
+        // ضغط الصورة تلقائياً لتسريع التحميل لثانيتين
+        function compressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width, h = img.height;
+                        if (w > 400) { h = Math.round((h * 400) / w); w = 400; }
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7));
+                    };
+                };
             });
         }
-        html += '</table>';
-        document.getElementById('products-list').innerHTML = html;
-    });
 
-    // جلب وعرض الطلبات المسجلة
-    db.ref("orders").on('value', snapshot => {
-        let html = '<table><tr><th>الزبون</th><th>الهاتف</th><th>الولاية والعنوان</th><th>تفاصيل الطلبيات</th><th>المجموع</th><th>التاريخ</th><th>إجراء</th></tr>';
-        if (snapshot.exists()) {
-            snapshot.forEach(child => {
+        // إضافة منتج
+        async function saveProduct(e) {
+            e.preventDefault();
+            const file = document.getElementById('prod-img').files[0];
+            if (!file) return;
+
+            const imgBase64 = await compressImage(file);
+            await db.ref("products").push({
+                name: document.getElementById('prod-name').value,
+                price: document.getElementById('prod-price').value,
+                category: document.getElementById('prod-category').value,
+                image: imgBase64
+            });
+
+            alert("تم إدراج العطر بنجاح!");
+            document.getElementById('add-product-form').reset();
+        }
+
+        // جلب البيانات وعرضها رأسياً
+        db.ref("products").on('value', snap => {
+            const container = document.getElementById('products-list');
+            container.innerHTML = "";
+            snap.forEach(child => {
+                const p = child.val();
+                container.innerHTML += `
+                    <div class="list-item-card">
+                        <div class="item-header">
+                            <b>${p.name}</b>
+                            <span style="color:var(--accent-gold); font-weight:bold;">${p.price} د.ج</span>
+                        </div>
+                        <div class="item-body">التصنيف: ${p.category || 'عام'}</div>
+                        <div class="item-actions">
+                            <button class="btn-sm btn-delete" onclick="deleteProduct('${child.key}')">حذف المنتج</button>
+                        </div>
+                    </div>`;
+            });
+        });
+
+        let currentOrders = {};
+        db.ref("orders").on('value', snap => {
+            const container = document.getElementById('orders-list');
+            container.innerHTML = "";
+            currentOrders = snap.val() || {};
+            
+            snap.forEach(child => {
                 const o = child.val();
                 const key = child.key;
-                const date = o.createdAt ? (typeof o.createdAt === 'number' ? new Date(o.createdAt).toLocaleString('ar-DZ') : o.createdAt) : 'الآن';
-                const phone = o.phone || '-';
                 
-                let itemsHtml = '<ul class="items-list-text">';
-                if (o.items && Array.isArray(o.items)) {
-                    o.items.forEach(it => {
-                        itemsHtml += `<li>${it.name} (الكمية: ${it.qty})</li>`;
-                    });
-                } else {
-                    itemsHtml += '<li>غير موضح</li>';
+                let itemsSummary = "";
+                if(o.items) {
+                    itemsSummary = o.items.map(i => `${i.name} (${i.qty})`).join(', ');
                 }
-                itemsHtml += '</ul>';
 
-                html += `<tr>
-                    <td><b>${o.customerName || 'زبون'}</b></td>
-                    <td>
-                        <span>${phone}</span><br>
-                        ${phone !== '-' ? `<button class="btn-copy" onclick="copyPhone('${phone}')">📋 نسخ</button>` : ''}
-                    </td>
-                    <td><small>${o.state || ''} - ${o.address || ''}</small></td>
-                    <td>${itemsHtml}</td>
-                    <td style="color:#d4af37; font-weight:bold;">${o.total} د.ج</td>
-                    <td><small>${date}</small></td>
-                    <td><button class="btn-danger" style="padding:5px 10px; width:auto;" onclick="deleteOrder('${key}')">حذف</button></td>
-                </tr>`;
+                container.innerHTML += `
+                    <div class="list-item-card">
+                        <div class="item-header">
+                            <b>الزبون: ${o.customerName || 'غير معروف'}</b>
+                            <span style="color:var(--accent-gold);">${o.total} د.ج</span>
+                        </div>
+                        <div class="item-body">
+                            📞 الهاتف: ${o.phone || '-'}<br>
+                            📍 العنوان: ${o.state || ''} - ${o.address || ''}<br>
+                            🛍️ الطلب: ${itemsSummary}
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-sm btn-print" onclick="openFacture('${key}')">🖨️ طباعة وصل</button>
+                            <button class="btn-sm btn-delete" onclick="deleteOrder('${key}')">حذف</button>
+                        </div>
+                    </div>`;
             });
-        } else {
-            html += '<tr><td colspan="7" style="text-align:center; color:#94a3b8;">لا توجد طلبات مسجلة حالياً</td></tr>';
+        });
+
+        // إدراج وحذف
+        function deleteProduct(key) { if(confirm("حذف المنتج؟")) db.ref("products/"+key).remove(); }
+        function deleteOrder(key) { if(confirm("حذف الطلب؟")) db.ref("orders/"+key).remove(); }
+        function deleteAllOrders() { if(confirm("هل تريد مسح كافة الطلبات؟")) db.ref("orders").remove(); }
+
+        // فتح وتجهيز الفاتورة للطباعة
+        function openFacture(orderKey) {
+            const order = currentOrders[orderKey];
+            if(!order) return;
+
+            document.getElementById('facture-date').innerText = "التاريخ: " + new Date().toLocaleDateString('ar-DZ');
+            document.getElementById('facture-client-info').innerHTML = `
+                <b>اسم الزبون:</b> ${order.customerName || '-'}<br>
+                <b>رقم الهاتف:</b> ${order.phone || '-'}<br>
+                <b>العنوان/الولاية:</b> ${order.state || ''} - ${order.address || ''}
+            `;
+
+            let tbody = "";
+            if(order.items) {
+                order.items.forEach(item => {
+                    tbody += `<tr>
+                        <td style="padding:6px;">${item.name}</td>
+                        <td style="padding:6px; text-align:center;">${item.qty}</td>
+                        <td style="padding:6px; text-align:center;">${item.price} د.ج</td>
+                    </tr>`;
+                });
+            }
+            document.getElementById('facture-items').innerHTML = tbody;
+            document.getElementById('facture-total').innerText = order.total || 0;
+            document.getElementById('facture-modal').style.display = "flex";
         }
-        html += '</table>';
-        document.getElementById('orders-list').innerHTML = html;
-    });
-}
 
-async function saveWhatsapp() {
-    if (!db) return;
-    const num = document.getElementById('whatsapp-num').value.trim();
-    if (!num) { alert("يرجى إدخال الرقم!"); return; }
-    await db.ref("settings/config").update({ whatsapp: num });
-    alert("تم حفظ رقم الواتساب بنجاح!");
-}
-
-async function addProduct() {
-    if (!db) return;
-    const name = document.getElementById('p-name').value.trim();
-    const price = Number(document.getElementById('p-price').value);
-    const stock = Number(document.getElementById('p-stock').value);
-    const category = document.getElementById('p-category').value;
-    const desc = document.getElementById('p-desc').value.trim();
-
-    if (!name || !price || isNaN(stock)) { alert("يرجى ملء الاسم، السعر، والكمية المتوفرة!"); return; }
-    if (base64Images.length === 0) { alert("يرجى اختيار صورة واحدة على الأقل من المعرض!"); return; }
-
-    await db.ref("products").push({
-        name: name,
-        price: price,
-        stock: stock,
-        category: category,
-        images: base64Images,
-        desc: desc,
-        createdAt: Date.now()
-    });
-
-    document.getElementById('p-name').value = '';
-    document.getElementById('p-price').value = '';
-    document.getElementById('p-stock').value = '';
-    document.getElementById('p-desc').value = '';
-    document.getElementById('p-files').value = '';
-    document.getElementById('preview-box').innerHTML = '';
-    base64Images = [];
-    alert("تمت إضافة العطر والكمية بنجاح للمتجر!");
-}
-
-async function deleteProduct(key) {
-    if (!db) return;
-    if (confirm("هل أنت تأكد من حذف هذا المنتج؟")) {
-        await db.ref("products/" + key).remove();
-    }
-}
-
-async function deleteOrder(key) {
-    if (!db) return;
-    if (confirm("هل أنت تأكد من حذف هذا الطلب؟")) {
-        await db.ref("orders/" + key).remove();
-        alert("تم حذف الطلب بنجاح!");
-    }
-}
-
-async function deleteAllOrders() {
-    if (!db) return;
-    if (confirm("⚠️ تحذير: هل أنت تأكد من حذف جميع الطلبات المسجلة نهائياً؟")) {
-        await db.ref("orders").remove();
-        alert("تم مسح كافة الطلبات بنجاح!");
-    }
-}
-</script>
+        function closeFactureModal() {
+            document.getElementById('facture-modal').style.display = "none";
+        }
+    </script>
 </body>
 </html>
