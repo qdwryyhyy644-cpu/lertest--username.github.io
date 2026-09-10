@@ -260,7 +260,7 @@ async function submitOrder(e) {
     let orderDetails = [];
     let text = `📦 طلب جديد من: ${name}\n`;
     text += `📞 الهاتف: ${phone}\n`;
-    text += `📍 الولاية: ${state}\n`;
+    text += `🏙 الولاية: ${state}\n`;
     text += `🏠 العنوان: ${address}\n\n`;
     text += `🛒 الطلبيات:\n`;
 
