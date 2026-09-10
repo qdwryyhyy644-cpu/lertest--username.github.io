@@ -70,7 +70,7 @@
         .install-btn { background: var(--accent-gold); color: #000; border: none; padding: 6px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .close-banner { background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer; }
 
-        .container { max-width: 800px; margin: 0 auto; display: none; } /* مخفية حتى يتم تسجيل الدخول */
+        .container { max-width: 800px; margin: 0 auto; display: none; }
         
         .card {
             background: var(--card-bg);
@@ -129,6 +129,43 @@
             margin-top: 8px;
             cursor: pointer;
             display: none;
+        }
+
+        /* نمط معرض الصور في المعاينة والمحادثة */
+        .image-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .preview-img-wrapper {
+            position: relative;
+            width: 75px;
+            height: 75px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--accent-gold);
+        }
+        .preview-img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .preview-img-wrapper .remove-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .vertical-list {
@@ -255,9 +292,12 @@
                     <option value="الأكثر مبيعاً">الأكثر مبيعاً</option>
                 </select>
 
-                <label id="img-label">صورة العطر:</label>
-                <input type="file" id="prod-img" accept="image/*">
-                <small id="img-notice" style="color: #94a3b8; display: none;">اترك هذا الحقل فارغاً إذا لا تريد تغيير الصورة الحالية.</small>
+                <label id="img-label">صور العطر (يمكن اختيار صورة أو عدة صور معاً):</label>
+                <input type="file" id="prod-img" accept="image/*" multiple onchange="handleImageSelection(event)">
+                <small id="img-notice" style="color: #94a3b8; display: none;">اترك هذا الحقل فارغاً إذا كنت لا تريد تغيير الصور الحالية.</small>
+
+                <!-- معاينة الصور المختارة -->
+                <div id="image-previews" class="image-preview-container"></div>
 
                 <button type="submit" id="submit-btn" class="btn-primary">نشر المنتج في المتجر</button>
                 <button type="button" id="cancel-edit-btn" class="btn-cancel" onclick="resetProductForm()">إلغاء التعديل</button>
@@ -321,7 +361,8 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let correctPassword = "admin123"; // كلمة السر الافتراضية
+        let correctPassword = "admin123";
+        let selectedBase64Images = []; // تخزين الصور المختارة حالياً
 
         // جلب الإعدادات الحالية من قاعدة البيانات
         db.ref("settings").on('value', snap => {
@@ -341,7 +382,7 @@
             if (inputPass === correctPassword) {
                 document.getElementById('login-overlay').style.display = 'none';
                 document.getElementById('main-container').style.display = 'block';
-                loadData(); // تحميل البيانات بعد التحقق
+                loadData();
             } else {
                 alert("كلمة السر غير صحيحة!");
             }
@@ -381,7 +422,7 @@
             alert("تم حفظ الإعدادات بنجاح!");
         }
 
-        // ضغط الصورة تلقائياً
+        // ضغط صورة واحدة مع الحفاظ على صفتها وجودتها
         function compressImage(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -392,13 +433,53 @@
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
                         let w = img.width, h = img.height;
-                        if (w > 400) { h = Math.round((h * 400) / w); w = 400; }
+                        const maxDim = 600; // أقصى أبعاد للضغط للحفاظ على الجودة خفيفة لـ Firebase
+                        if (w > maxDim || h > maxDim) {
+                            if (w > h) {
+                                h = Math.round((h * maxDim) / w);
+                                w = maxDim;
+                            } else {
+                                w = Math.round((w * maxDim) / h);
+                                h = maxDim;
+                            }
+                        }
                         canvas.width = w; canvas.height = h;
-                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                        resolve(canvas.toDataURL('image/jpeg', 0.7));
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', 0.75));
                     };
                 };
             });
+        }
+
+        // معالجة اختيار عدة صور ومعاينتها
+        async function handleImageSelection(event) {
+            const files = Array.from(event.target.files);
+            if (!files.length) return;
+
+            for (let file of files) {
+                const compressed = await compressImage(file);
+                selectedBase64Images.push(compressed);
+            }
+            renderImagePreviews();
+        }
+
+        function renderImagePreviews() {
+            const container = document.getElementById('image-previews');
+            container.innerHTML = "";
+            selectedBase64Images.forEach((imgSrc, index) => {
+                container.innerHTML += `
+                    <div class="preview-img-wrapper">
+                        <img src="${imgSrc}" alt="معاينة">
+                        <button type="button" class="remove-btn" onclick="removeImage(${index})">✕</button>
+                    </div>
+                `;
+            });
+        }
+
+        function removeImage(index) {
+            selectedBase64Images.splice(index, 1);
+            renderImagePreviews();
         }
 
         // حفظ المنتج (إضافة أو تعديل)
@@ -406,38 +487,51 @@
         async function saveProduct(e) {
             e.preventDefault();
             
-            const editId = document.getElementById('edit-prod-id').value;
-            const name = document.getElementById('prod-name').value;
-            const price = document.getElementById('prod-price').value;
-            const category = document.getElementById('prod-category').value;
-            const file = document.getElementById('prod-img').files[0];
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "جاري الحفظ والنشر...";
 
-            if (!editId && !file) {
-                alert("يرجى اختيار صورة للمنتج الجديد!");
-                return;
+            try {
+                const editId = document.getElementById('edit-prod-id').value;
+                const name = document.getElementById('prod-name').value;
+                const price = document.getElementById('prod-price').value;
+                const category = document.getElementById('prod-category').value;
+
+                if (!editId && selectedBase64Images.length === 0) {
+                    alert("يرجى اختيار صورة واحدة على الأقل للمنتج الجديد!");
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "نشر المنتج في المتجر";
+                    return;
+                }
+
+                // اختيار الصورة الأولى كخلفية رسمية
+                const primaryImage = selectedBase64Images.length > 0 ? selectedBase64Images[0] : null;
+
+                if (editId) {
+                    const updateData = { name, price, category };
+                    if (selectedBase64Images.length > 0) {
+                        updateData.image = primaryImage;
+                        updateData.images = selectedBase64Images;
+                    }
+                    await db.ref("products/" + editId).update(updateData);
+                    alert("تم تعديل المنتج بنجاح!");
+                } else {
+                    await db.ref("products").push({
+                        name,
+                        price,
+                        category,
+                        image: primaryImage,
+                        images: selectedBase64Images
+                    });
+                    alert("تم إدراج العطر بنجاح!");
+                }
+
+                resetProductForm();
+            } catch (err) {
+                alert("حدث خطأ أثناء الحفظ: " + err.message);
+            } finally {
+                submitBtn.disabled = false;
             }
-
-            let imgBase64 = null;
-            if (file) {
-                imgBase64 = await compressImage(file);
-            }
-
-            if (editId) {
-                const updateData = { name, price, category };
-                if (imgBase64) updateData.image = imgBase64;
-                await db.ref("products/" + editId).update(updateData);
-                alert("تم تعديل المنتج بنجاح!");
-            } else {
-                await db.ref("products").push({
-                    name,
-                    price,
-                    category,
-                    image: imgBase64
-                });
-                alert("تم إدراج العطر بنجاح!");
-            }
-
-            resetProductForm();
         }
 
         function editProduct(key) {
@@ -449,6 +543,10 @@
             document.getElementById('prod-price').value = p.price || '';
             document.getElementById('prod-category').value = p.category || 'عطور صيفية';
             
+            // استرجاع الصور الحالية للمعاينة
+            selectedBase64Images = p.images ? [...p.images] : (p.image ? [p.image] : []);
+            renderImagePreviews();
+
             document.getElementById('form-title').innerText = "✏️ تعديل العطر الحالي";
             document.getElementById('submit-btn').innerText = "حفظ التعديلات";
             document.getElementById('cancel-edit-btn').style.display = "block";
@@ -460,6 +558,8 @@
         function resetProductForm() {
             document.getElementById('add-product-form').reset();
             document.getElementById('edit-prod-id').value = "";
+            selectedBase64Images = [];
+            renderImagePreviews();
             document.getElementById('form-title').innerText = "➕ إضافة عطر جديد للمتجر";
             document.getElementById('submit-btn').innerText = "نشر المنتج في المتجر";
             document.getElementById('cancel-edit-btn').style.display = "none";
@@ -476,13 +576,23 @@
                 snap.forEach(child => {
                     const p = child.val();
                     const key = child.key;
+                    
+                    // حساب عدد الصور المرفقة
+                    const imgCount = p.images ? p.images.length : (p.image ? 1 : 0);
+                    const thumb = (p.images && p.images[0]) || p.image || '';
+
                     container.innerHTML += `
                         <div class="list-item-card">
                             <div class="item-header">
-                                <b>${p.name}</b>
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    ${thumb ? `<img src="${thumb}" style="width:40px; height:40px; border-radius:6px; object-fit:cover;">` : ''}
+                                    <b>${p.name}</b>
+                                </div>
                                 <span style="color:var(--accent-gold); font-weight:bold;">${p.price} د.ج</span>
                             </div>
-                            <div class="item-body">التصنيف: ${p.category || 'عام'}</div>
+                            <div class="item-body">
+                                والتصنيف: ${p.category || 'عام'} | 🖼️ عدد الصور: ${imgCount}
+                            </div>
                             <div class="item-actions">
                                 <button class="btn-sm btn-edit" onclick="editProduct('${key}')">✏️ تعديل</button>
                                 <button class="btn-sm btn-delete" onclick="deleteProduct('${key}')">حذف المنتج</button>
