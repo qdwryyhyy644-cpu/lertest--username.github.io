@@ -15,19 +15,83 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
+        :root {
+            --accent-gold: #d4af37;
+            --gold-gradient: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
+            --dark-overlay: rgba(10, 14, 23, 0.82);
+            --card-glass: rgba(15, 23, 42, 0.75);
+            --card-border: rgba(212, 175, 55, 0.25);
+        }
+
+        /* خلفية سينمائية فاخرة للموقع مع التثبيت (Fixed Background) */
+        body {
+            margin: 0;
+            padding: 0;
+            background-image: 
+                linear-gradient(var(--dark-overlay), var(--dark-overlay)),
+                url('https://images.unsplash.com/photo-1547887537-6158d64c35b3?q=80&w=1920&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            color: #f8fafc;
+            min-height: 100vh;
+        }
+
+        /* تحسينات الشفافية والزجاج المصقول للترويسة */
+        header {
+            background: rgba(15, 23, 42, 0.85) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        header h1 {
+            background: var(--gold-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        /* شريط التصنيفات المصقول */
+        .categories-bar {
+            background: rgba(15, 23, 42, 0.65) !important;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 10px 0;
+        }
+
+        .cat-btn {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            color: #e2e8f0;
+            backdrop-filter: blur(4px);
+            transition: all 0.3s ease;
+        }
+
+        .cat-btn.active, .cat-btn:hover {
+            background: var(--gold-gradient) !important;
+            color: #000 !important;
+            font-weight: bold;
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+        }
+
         /* أنماط فقاعة الواتساب العائمة (أسفل اليسار) */
         .whatsapp-float {
             position: fixed;
             bottom: 20px;
             left: 20px;
-            width: 48px;
-            height: 48px;
+            width: 52px;
+            height: 52px;
             background-color: #25d366;
             color: #ffffff;
             border-radius: 50%;
             text-align: center;
             font-size: 24px;
-            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.3);
+            box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.5);
             z-index: 1000;
             display: flex;
             align-items: center;
@@ -37,22 +101,39 @@
         }
 
         .whatsapp-float:hover {
-            transform: scale(1.1);
-            box-shadow: 0px 6px 16px rgba(37, 211, 102, 0.4);
+            transform: scale(1.12);
+            box-shadow: 0px 6px 20px rgba(37, 211, 102, 0.6);
         }
 
         .whatsapp-float svg {
-            width: 28px;
-            height: 28px;
+            width: 30px;
+            height: 30px;
             fill: #ffffff;
         }
 
-        /* تحسينات للتحميل السريع والهيكل البصري الخفيف */
+        /* تحسين بطاقات المنتجات لتظهر كزجاج مظلم فخم (Dark Glassmorphism) */
         .products-grid {
-            min-height: 300px; /* منع اهتزاز layout أثناء التحميل */
+            min-height: 300px;
+            padding: 20px;
         }
 
-        /* تحسين صور المنتجات لتكون خفيفة ومستجيبة دون تأخير */
+        .product-card {
+            background: var(--card-glass) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border) !important;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(212, 175, 55, 0.2);
+            border-color: rgba(212, 175, 55, 0.6) !important;
+        }
+
         .product-card img {
             content-visibility: auto;
             aspect-ratio: 1 / 1;
@@ -60,13 +141,18 @@
             width: 100%;
             background-color: #1e293b;
         }
+
+        .gold-text {
+            color: var(--accent-gold) !important;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
     <header>
         <h1>عطور الفخامة</h1>
-        <div class="delivery-badge">🚚 التوصيل متوفر 58 ولاية</div>
+        <div class="delivery-badge">🚚 التوصيل متوفر 69 ولاية</div>
         <button id="open-cart" onclick="toggleCart()">
             🛒 السلة (<span id="cart-count">0</span>)
         </button>
