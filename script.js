@@ -1,3 +1,4 @@
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyC3Y1n6gd-XtJdv-7UKOesb9-Lgc2lII0c",
   authDomain: "otour-elfakhama-cf76d.firebaseapp.com",
@@ -16,16 +17,19 @@ let cart = [];
 let targetCategory = 'الكل';
 let whatsappNumber = "213656708603";
 
+// جلب المنتجات والإعدادات من Firebase
 function fetchProducts() {
     const container = document.getElementById('products-container');
     if (container) {
-        container.innerHTML = '<p style="text-align:center; grid-column:1/-1; color:#94a3b8; padding:40px;">جاري تحميل العطور...</p>';
+        container.innerHTML = '<p style="text-align:center; grid-column:1/-1; color:#94a3b8; padding:40px;">جاري تحميل العطور الفاخرة...</p>';
     }
     
-    db.ref("settings/config/whatsapp").on('value', snap => {
+    // جلب رقم الواتساب المحدث من اللوحة
+    db.ref("settings/whatsapp").on('value', snap => {
         if (snap.exists() && snap.val()) whatsappNumber = snap.val();
     });
 
+    // جلب المنتجات
     db.ref("products").on('value', snapshot => {
         allProducts = [];
         if (snapshot.exists()) {
@@ -37,6 +41,7 @@ function fetchProducts() {
     });
 }
 
+// عرض المنتجات بأسلوب السلايدر المتعدد
 function renderProducts() {
     const container = document.getElementById('products-container');
     if (!container) return;
@@ -52,20 +57,28 @@ function renderProducts() {
     }
 
     filtered.forEach(p => {
-        const images = (p.images && p.images.length > 0) ? p.images : ['https://via.placeholder.com/300'];
+        // استخراج قائمة الصور المتاحة سواء كانت مصفوفة images أو صورة واحدة image
+        let productImages = [];
+        if (p.images && Array.isArray(p.images) && p.images.length > 0) {
+            productImages = p.images;
+        } else if (p.image) {
+            productImages = [p.image];
+        } else {
+            productImages = ['https://via.placeholder.com/300?text=بدون+صورة'];
+        }
         
-        let imgsHTML = images.map(img => `<img src="${img}" alt="${p.name}">`).join('');
+        let imgsHTML = productImages.map(img => `<img src="${img}" alt="${p.name}" loading="lazy">`).join('');
         
-        // إنشاء الأسهم والنقاط إذا كانت الصور أكثر من صورة واحدة
+        // إنشاء التحكم في معرض الصور إذا كانت الصور أكثر من صورة
         let arrowsHTML = '';
         let dotsHTML = '';
-        if (images.length > 1) {
+        if (productImages.length > 1) {
             arrowsHTML = `
                 <button class="slider-arrow prev" onclick="moveSlider('${p.id}', -1)">❯</button>
                 <button class="slider-arrow next" onclick="moveSlider('${p.id}', 1)">❮</button>
             `;
             dotsHTML = `<div class="slider-dots" id="dots-${p.id}">` + 
-                images.map((_, idx) => `<span class="dot ${idx === 0 ? 'active' : ''}"></span>`).join('') + 
+                productImages.map((_, idx) => `<span class="dot ${idx === 0 ? 'active' : ''}"></span>`).join('') + 
                 `</div>`;
         }
 
@@ -97,15 +110,16 @@ function renderProducts() {
     });
 }
 
-// التحكم بالسلايدر عبر الأسهم
+// التمرير بالأسهم للصور
 function moveSlider(prodId, direction) {
     const slider = document.getElementById(`slider-${prodId}`);
     if (!slider) return;
     const scrollAmount = slider.clientWidth;
-    slider.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+    // دعم الاتجاه العربي RTL
+    slider.scrollBy({ left: -direction * scrollAmount, behavior: 'smooth' });
 }
 
-// تحديث مؤشر النقاط النشطة عند التمرير
+// تحديث مؤشر النقاط أثناء التمرير
 function updateDots(prodId) {
     const slider = document.getElementById(`slider-${prodId}`);
     const dotsContainer = document.getElementById(`dots-${prodId}`);
@@ -122,6 +136,7 @@ function updateDots(prodId) {
     });
 }
 
+// تصفية التصنيفات
 function filterCategory(cat, btn) {
     targetCategory = cat;
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
@@ -129,7 +144,7 @@ function filterCategory(cat, btn) {
     renderProducts();
 }
 
-// زيادة أو نقصان الكمية داخل كارت المنتج قبل الإضافة
+// تعديل الكمية في بطاقة المنتج
 function changeCardQty(id, delta) {
     const qtySpan = document.getElementById(`card-qty-${id}`);
     if (!qtySpan) return;
@@ -139,6 +154,7 @@ function changeCardQty(id, delta) {
     qtySpan.innerText = currentQty;
 }
 
+// إضافة المنتج للسلة
 function addToCart(id) {
     const prod = allProducts.find(p => p.id === id);
     if (!prod) return;
@@ -153,7 +169,6 @@ function addToCart(id) {
         cart.push({ ...prod, qty: qtyToAdd });
     }
     
-    // إعادة تعيين كمية الكارت إلى 1
     if (qtySpan) qtySpan.innerText = 1;
 
     updateCartUI();
@@ -173,6 +188,7 @@ function removeFromCart(id) {
     updateCartUI();
 }
 
+// تحديث واجهة السلة
 function updateCartUI() {
     const list = document.getElementById('cart-items-list');
     if (!list) return;
@@ -231,6 +247,7 @@ function closeCheckoutModal() {
     document.getElementById('checkout-modal').style.display = 'none';
 }
 
+// إرسال الطلب وحفظه
 async function submitOrder(e) {
     e.preventDefault();
     
@@ -256,7 +273,6 @@ async function submitOrder(e) {
 
     text += `\n💰 الإجمالي: ${total} د.ج`;
 
-    // حفظ الطلب في Firebase Realtime Database
     try {
         await db.ref("orders").push({
             customerName: name,
@@ -268,7 +284,7 @@ async function submitOrder(e) {
             createdAt: Date.now()
         });
     } catch (err) {
-        console.error("Error saving order:", err);
+        console.error("خطأ أثناء حفظ الطلب:", err);
     }
 
     closeCheckoutModal();
@@ -282,7 +298,9 @@ async function submitOrder(e) {
         setTimeout(() => { toast.style.display = 'none'; }, 4000);
     }
 
+    // فتح تطبيق الواتساب بالرسالة المنسقة
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`, '_blank');
 }
 
+// بدء التشغيل والجلب التلقائي
 fetchProducts();
