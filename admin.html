@@ -94,6 +94,11 @@
             box-sizing: border-box;
         }
 
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
         button.btn-primary {
             background: var(--btn-blue);
             color: white;
@@ -241,7 +246,7 @@
             <p style="color: #94a3b8; font-size: 0.9rem;">أدخل كلمة سر لوحة التحكم للوصول</p>
             <form onsubmit="checkPassword(event)">
                 <input type="password" id="login-pass-input" placeholder="كلمة السر" required style="margin-bottom: 15px;">
-                <button type="submit" class="btn-primary" style="margin-top: 0;">دخول اللوحة 🔓</button>
+                <button type="submit" id="login-submit-btn" class="btn-primary" style="margin-top: 0;">دخول اللوحة 🔓</button>
             </form>
         </div>
     </div>
@@ -283,6 +288,12 @@
                 <label>السعر (د.ج):</label>
                 <input type="number" id="prod-price" required placeholder="مثال: 4500">
                 
+                <label>الكمية المتاحة (المخزون):</label>
+                <input type="number" id="prod-qty" required min="0" value="1" placeholder="مثال: 10">
+
+                <label>وصف العطر:</label>
+                <textarea id="prod-desc" placeholder="أكتب تفاصيل العطر، مكوناته، والمكونات الأساسية..."></textarea>
+
                 <label>التصنيف:</label>
                 <select id="prod-category">
                     <option value="عطور صيفية">عطور صيفية</option>
@@ -364,7 +375,7 @@
         let correctPassword = "admin123";
         let selectedBase64Images = []; // تخزين الصور المختارة حالياً
 
-        // جلب الإعدادات الحالية من قاعدة البيانات
+        // جلب الإعدادات الحالية بانتظام من قاعدة البيانات
         db.ref("settings").on('value', snap => {
             const data = snap.val() || {};
             if (data.whatsapp) document.getElementById('setting-whatsapp').value = data.whatsapp;
@@ -374,17 +385,40 @@
             }
         });
 
-        // التحقق من كلمة السر عند فتح الصفحة
-        function checkPassword(e) {
+        // التحقق من كلمة السر عند فتح الصفحة المصلح للعمل فوراً من المرة الأولى
+        async function checkPassword(e) {
             e.preventDefault();
+            const btn = document.getElementById('login-submit-btn');
             const inputPass = document.getElementById('login-pass-input').value;
+            
+            btn.innerText = "جاري التحقق...";
+            btn.disabled = true;
 
-            if (inputPass === correctPassword) {
-                document.getElementById('login-overlay').style.display = 'none';
-                document.getElementById('main-container').style.display = 'block';
-                loadData();
-            } else {
-                alert("كلمة السر غير صحيحة!");
+            try {
+                // جلب أحدث كلمة سر مباشرة للتأكد من المرة الأولى
+                const snap = await db.ref("settings/password").once('value');
+                const latestPass = snap.val() || correctPassword;
+
+                if (inputPass === latestPass) {
+                    correctPassword = latestPass;
+                    document.getElementById('login-overlay').style.display = 'none';
+                    document.getElementById('main-container').style.display = 'block';
+                    loadData();
+                } else {
+                    alert("كلمة السر غير صحيحة!");
+                }
+            } catch (err) {
+                // في حالة الخلل في الاتصال يتم المقارنة بالكلمة المحفوظة محلياً
+                if (inputPass === correctPassword) {
+                    document.getElementById('login-overlay').style.display = 'none';
+                    document.getElementById('main-container').style.display = 'block';
+                    loadData();
+                } else {
+                    alert("كلمة السر غير صحيحة!");
+                }
+            } finally {
+                btn.innerText = "دخول اللوحة 🔓";
+                btn.disabled = false;
             }
         }
 
@@ -419,6 +453,7 @@
                 password: password
             });
 
+            correctPassword = password;
             alert("تم حفظ الإعدادات بنجاح!");
         }
 
@@ -495,6 +530,8 @@
                 const editId = document.getElementById('edit-prod-id').value;
                 const name = document.getElementById('prod-name').value;
                 const price = document.getElementById('prod-price').value;
+                const quantity = parseInt(document.getElementById('prod-qty').value) || 0;
+                const description = document.getElementById('prod-desc').value;
                 const category = document.getElementById('prod-category').value;
 
                 if (!editId && selectedBase64Images.length === 0) {
@@ -508,7 +545,7 @@
                 const primaryImage = selectedBase64Images.length > 0 ? selectedBase64Images[0] : null;
 
                 if (editId) {
-                    const updateData = { name, price, category };
+                    const updateData = { name, price, quantity, description, category };
                     if (selectedBase64Images.length > 0) {
                         updateData.image = primaryImage;
                         updateData.images = selectedBase64Images;
@@ -519,6 +556,8 @@
                     await db.ref("products").push({
                         name,
                         price,
+                        quantity,
+                        description,
                         category,
                         image: primaryImage,
                         images: selectedBase64Images
@@ -541,6 +580,8 @@
             document.getElementById('edit-prod-id').value = key;
             document.getElementById('prod-name').value = p.name || '';
             document.getElementById('prod-price').value = p.price || '';
+            document.getElementById('prod-qty').value = p.quantity !== undefined ? p.quantity : 1;
+            document.getElementById('prod-desc').value = p.description || '';
             document.getElementById('prod-category').value = p.category || 'عطور صيفية';
             
             // استرجاع الصور الحالية للمعاينة
@@ -558,6 +599,7 @@
         function resetProductForm() {
             document.getElementById('add-product-form').reset();
             document.getElementById('edit-prod-id').value = "";
+            document.getElementById('prod-qty').value = "1";
             selectedBase64Images = [];
             renderImagePreviews();
             document.getElementById('form-title').innerText = "➕ إضافة عطر جديد للمتجر";
@@ -573,6 +615,11 @@
                 container.innerHTML = "";
                 currentProducts = snap.val() || {};
                 
+                if (Object.keys(currentProducts).length === 0) {
+                    container.innerHTML = '<p style="color:#94a3b8;">لا توجد منتجات حالياً.</p>';
+                    return;
+                }
+
                 snap.forEach(child => {
                     const p = child.val();
                     const key = child.key;
@@ -591,7 +638,8 @@
                                 <span style="color:var(--accent-gold); font-weight:bold;">${p.price} د.ج</span>
                             </div>
                             <div class="item-body">
-                                والتصنيف: ${p.category || 'عام'} | 🖼️ عدد الصور: ${imgCount}
+                                <b>التصنيف:</b> ${p.category || 'عام'} | <b>الكمية المتاحة:</b> <span style="color:${p.quantity > 0 ? '#22c55e' : '#ef4444'}">${p.quantity !== undefined ? p.quantity : 'غير محدد'}</span> | 🖼️ الصور: ${imgCount}<br>
+                                ${p.description ? `<b>الوصف:</b> ${p.description}` : ''}
                             </div>
                             <div class="item-actions">
                                 <button class="btn-sm btn-edit" onclick="editProduct('${key}')">✏️ تعديل</button>
@@ -606,6 +654,11 @@
                 container.innerHTML = "";
                 currentOrders = snap.val() || {};
                 
+                if (Object.keys(currentOrders).length === 0) {
+                    container.innerHTML = '<p style="color:#94a3b8;">لا توجد طلبات مسجلة.</p>';
+                    return;
+                }
+
                 snap.forEach(child => {
                     const o = child.val();
                     const key = child.key;
