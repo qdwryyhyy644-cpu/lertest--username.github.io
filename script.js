@@ -83,12 +83,12 @@ function renderProducts() {
         }
 
         // قراءة الوصف من بيانات المنتج
-        const descriptionText = p.desc || p.description || 'لا يوجد وصف متوفر لهذا العطر حالياً.';
+        const descriptionText = p.desc || p.description || '';
 
-        // قراءة الكمية المتوفرة بالمخزن (إذا كانت مخزنة في Firebase كـ stock أو quantity)
+        // قراءة الكمية المتوفرة بالمخزن
         const stockCount = p.stock !== undefined ? p.stock : (p.quantity !== undefined ? p.quantity : null);
         const stockHTML = stockCount !== null 
-            ? `<div class="product-stock" style="font-size:0.85rem; color:#d97706; margin-bottom:8px;">الكمية المتوفرة: <strong>${stockCount}</strong></div>`
+            ? `<div class="product-stock" style="font-size:0.85rem; color:#22c55e; text-align:left; margin-top:6px; margin-bottom:8px; font-weight:600;">الكمية المتوفرة: ${stockCount}</div>`
             : '';
 
         const card = document.createElement('div');
@@ -103,10 +103,12 @@ function renderProducts() {
             </div>
             <div class="product-info">
                 <h3>${p.name}</h3>
-                <p class="product-desc" style="margin: 8px 0; color: #cbd5e1; font-size: 0.9rem; line-height: 1.4;">${descriptionText}</p>
-                ${stockHTML}
+                ${descriptionText ? `<p class="product-desc" style="margin: 6px 0; color: #cbd5e1; font-size: 0.88rem; line-height: 1.4;">${descriptionText}</p>` : ''}
+                
                 <div class="product-price">${p.price} د.ج</div>
                 
+                ${stockHTML}
+
                 <div class="qty-control">
                     <button class="qty-btn" onclick="changeCardQty('${p.id}', 1)">+</button>
                     <span class="qty-value" id="card-qty-${p.id}">1</span>
