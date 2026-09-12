@@ -41,7 +41,7 @@ function fetchProducts() {
     });
 }
 
-// عرض المنتجات بأسلوب السلايدر المتعدد
+// عرض المنتجات بأسلوب السلايدر المتعدد مع إظهار الوصف والكمية
 function renderProducts() {
     const container = document.getElementById('products-container');
     if (!container) return;
@@ -57,7 +57,7 @@ function renderProducts() {
     }
 
     filtered.forEach(p => {
-        // استخراج قائمة الصور المتاحة سواء كانت مصفوفة images أو صورة واحدة image
+        // استخراج قائمة الصور المتاحة
         let productImages = [];
         if (p.images && Array.isArray(p.images) && p.images.length > 0) {
             productImages = p.images;
@@ -69,7 +69,7 @@ function renderProducts() {
         
         let imgsHTML = productImages.map(img => `<img src="${img}" alt="${p.name}" loading="lazy">`).join('');
         
-        // إنشاء التحكم في معرض الصور إذا كانت الصور أكثر من صورة
+        // التحكم في معرض الصور
         let arrowsHTML = '';
         let dotsHTML = '';
         if (productImages.length > 1) {
@@ -81,6 +81,15 @@ function renderProducts() {
                 productImages.map((_, idx) => `<span class="dot ${idx === 0 ? 'active' : ''}"></span>`).join('') + 
                 `</div>`;
         }
+
+        // قراءة الوصف من بيانات المنتج
+        const descriptionText = p.desc || p.description || 'لا يوجد وصف متوفر لهذا العطر حالياً.';
+
+        // قراءة الكمية المتوفرة بالمخزن (إذا كانت مخزنة في Firebase كـ stock أو quantity)
+        const stockCount = p.stock !== undefined ? p.stock : (p.quantity !== undefined ? p.quantity : null);
+        const stockHTML = stockCount !== null 
+            ? `<div class="product-stock" style="font-size:0.85rem; color:#d97706; margin-bottom:8px;">الكمية المتوفرة: <strong>${stockCount}</strong></div>`
+            : '';
 
         const card = document.createElement('div');
         card.className = 'product-card';
@@ -94,7 +103,8 @@ function renderProducts() {
             </div>
             <div class="product-info">
                 <h3>${p.name}</h3>
-                <p class="product-desc">${p.desc || ''}</p>
+                <p class="product-desc" style="margin: 8px 0; color: #cbd5e1; font-size: 0.9rem; line-height: 1.4;">${descriptionText}</p>
+                ${stockHTML}
                 <div class="product-price">${p.price} د.ج</div>
                 
                 <div class="qty-control">
@@ -115,7 +125,6 @@ function moveSlider(prodId, direction) {
     const slider = document.getElementById(`slider-${prodId}`);
     if (!slider) return;
     const scrollAmount = slider.clientWidth;
-    // دعم الاتجاه العربي RTL
     slider.scrollBy({ left: -direction * scrollAmount, behavior: 'smooth' });
 }
 
@@ -144,7 +153,7 @@ function filterCategory(cat, btn) {
     renderProducts();
 }
 
-// تعديل الكمية في بطاقة المنتج
+// تعديل الكمية المطلوبة في بطاقة المنتج
 function changeCardQty(id, delta) {
     const qtySpan = document.getElementById(`card-qty-${id}`);
     if (!qtySpan) return;
